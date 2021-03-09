@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { ESBuildPlugin } from "esbuild-loader";
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
 import path from "path";
 import { Configuration, ResolveOptions, DefinePlugin, EnvironmentPlugin } from "webpack";
@@ -48,15 +49,10 @@ export default (_: unknown, argv: WebpackArgv): Configuration => {
           test: /\.tsx?$/,
           exclude: /node_modules/,
           use: {
-            loader: "ts-loader",
+            loader: "esbuild-loader",
             options: {
-              transpileOnly: true,
-              // https://github.com/TypeStrong/ts-loader#onlycompilebundledfiles
-              // avoid looking at files which are not part of the bundle
-              onlyCompileBundledFiles: true,
-              compilerOptions: {
-                module: "es2020",
-              },
+              loader: "ts",
+              target: "es2020",
             },
           },
         },
@@ -70,6 +66,7 @@ export default (_: unknown, argv: WebpackArgv): Configuration => {
     },
 
     plugins: [
+      new ESBuildPlugin(),
       new DefinePlugin({
         MAIN_WINDOW_WEBPACK_ENTRY: rendererEntry,
         // Should match webpack-defines.d.ts
