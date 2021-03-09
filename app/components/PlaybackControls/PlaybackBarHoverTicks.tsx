@@ -10,11 +10,11 @@
 //   This source code is licensed under the Apache License, Version 2.0,
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
+import { useResizeDetector } from "react-resize-detector";
 import styled, { css } from "styled-components";
 
 import { ScaleBounds } from "../ReactChartjs/zoomAndPanHelpers";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import {
   MessagePipelineContext,
   useMessagePipeline,
@@ -59,7 +59,7 @@ type Props = {
 
 export default React.memo<Props>(function PlaybackBarHoverTicks({ componentId }: Props) {
   const { startTime, endTime } = useMessagePipeline(getStartAndEndTime);
-  const [width, setWidth] = useState<number | null | undefined>();
+  const { width } = useResizeDetector();
 
   const scaleBounds = useMemo<{ current: ReadonlyArray<ScaleBounds> | null | undefined }>(() => {
     if (width == null || startTime == null || endTime == null) {
@@ -82,14 +82,9 @@ export default React.memo<Props>(function PlaybackBarHoverTicks({ componentId }:
   }, [width, startTime, endTime, componentId]);
 
   return (
-    <>
-      <Dimensions onChange={({ width: newWidth }) => setWidth(newWidth)} />
-      {scaleBounds && (
-        <HoverBar componentId={componentId} scaleBounds={scaleBounds} isTimestampScale>
-          <TopTick />
-          <BottomTick />
-        </HoverBar>
-      )}
-    </>
+    <HoverBar componentId={componentId} scaleBounds={scaleBounds} isTimestampScale>
+      <TopTick />
+      <BottomTick />
+    </HoverBar>
   );
 });

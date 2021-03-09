@@ -19,6 +19,7 @@ import MoreIcon from "@mdi/svg/svg/unfold-more-horizontal.svg";
 import { clamp, groupBy } from "lodash";
 import Tree from "rc-tree";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import ReactResizeDetector from "react-resize-detector";
 import { useSpring, animated } from "react-spring";
 import styled from "styled-components";
 
@@ -43,7 +44,6 @@ import {
   TreeNode,
   VisibleTopicsCountByKey,
 } from "./types";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import Icon from "@foxglove-studio/app/components/Icon";
 import useLinkedGlobalVariables from "@foxglove-studio/app/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
 import { useChangeDetector } from "@foxglove-studio/app/util/hooks";
@@ -446,7 +446,7 @@ function TopicTreeWrapper({
       style={{ height: containerHeight - CONTAINER_SPACING * 3 }}
       className="ant-component"
     >
-      <Dimensions>
+      <ReactResizeDetector handleWidth>
         {({ width }) => (
           <div
             style={{
@@ -480,7 +480,7 @@ function TopicTreeWrapper({
                   {...rest}
                   pinTopics={pinTopics}
                   showTopicTree={showTopicTree}
-                  treeWidth={width}
+                  treeWidth={width ?? 0}
                   treeHeight={
                     containerHeight - SEARCH_BAR_HEIGHT - SWITCHER_HEIGHT - CONTAINER_SPACING * 2
                   }
@@ -489,7 +489,7 @@ function TopicTreeWrapper({
             </STopicTree>
           </div>
         )}
-      </Dimensions>
+      </ReactResizeDetector>
     </STopicTreeWrapper>
   );
 }

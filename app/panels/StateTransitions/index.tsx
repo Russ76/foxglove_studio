@@ -14,6 +14,7 @@
 import { uniq } from "lodash";
 import * as React from "react";
 import { hot } from "react-hot-loader/root";
+import ReactResizeDetector from "react-resize-detector";
 import stringHash from "string-hash";
 import styled, { css } from "styled-components";
 import tinycolor from "tinycolor2";
@@ -21,7 +22,6 @@ import { $Shape } from "utility-types";
 
 import helpContent from "./index.help.md";
 import Button from "@foxglove-studio/app/components/Button";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import MessageHistoryDEPRECATED, {
   MessageHistoryData,
 } from "@foxglove-studio/app/components/MessageHistoryDEPRECATED";
@@ -340,13 +340,13 @@ class StateTransitions extends React.PureComponent<Props> {
 
             return (
               <SChartContainerOuter>
-                <Dimensions>
+                <ReactResizeDetector handleWidth>
                   {({ width }) => (
-                    <SChartContainerInner style={{ width: width - marginRight, height }}>
+                    <SChartContainerInner style={{ width: width ?? 0 - marginRight, height }}>
                       <TimeBasedChart
                         zoom
                         isSynced
-                        width={width - marginRight}
+                        width={width ?? 0 - marginRight}
                         height={height}
                         data={data}
                         type="multicolorLine"
@@ -386,7 +386,7 @@ class StateTransitions extends React.PureComponent<Props> {
                       ))}
                     </SChartContainerInner>
                   )}
-                </Dimensions>
+                </ReactResizeDetector>
               </SChartContainerOuter>
             );
           }}

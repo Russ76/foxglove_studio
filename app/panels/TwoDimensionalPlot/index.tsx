@@ -16,12 +16,12 @@ import * as React from "react";
 import DocumentEvents from "react-document-events";
 import ReactDOM from "react-dom";
 import { hot } from "react-hot-loader/root";
+import ReactResizeDetector from "react-resize-detector";
 import styled from "styled-components";
 import { $Shape } from "utility-types";
 
 import helpContent from "./index.help.md";
 import Button from "@foxglove-studio/app/components/Button";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import EmptyState from "@foxglove-studio/app/components/EmptyState";
 import Flex from "@foxglove-studio/app/components/Flex";
 import KeyListener from "@foxglove-studio/app/components/KeyListener";
@@ -624,7 +624,7 @@ function TwoDimensionalPlot(props: Props) {
         <EmptyState>No 2D Plot data (lines, points, polygons) to visualize</EmptyState>
       ) : (
         <SRoot onDoubleClick={onResetZoom}>
-          <Dimensions>
+          <ReactResizeDetector handleWidth handleHeight>
             {({ width, height }) => (
               <>
                 <HoverBar mousePosition={mousePosition}>
@@ -654,7 +654,7 @@ function TwoDimensionalPlot(props: Props) {
                 )}
               </>
             )}
-          </Dimensions>
+          </ReactResizeDetector>
           <DocumentEvents
             capture
             onMouseDown={onMouseMove}

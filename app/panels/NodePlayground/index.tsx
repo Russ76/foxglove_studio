@@ -18,6 +18,7 @@ import PlusIcon from "@mdi/svg/svg/plus.svg";
 import * as React from "react";
 import { hot } from "react-hot-loader/root";
 import { useSelector, useDispatch } from "react-redux";
+import { useResizeDetector } from "react-resize-detector";
 import styled from "styled-components";
 import { $Shape } from "utility-types";
 import { v4 as uuidv4 } from "uuid";
@@ -25,7 +26,6 @@ import { v4 as uuidv4 } from "uuid";
 import { Script } from "./script";
 import { setUserNodes as setUserNodesAction } from "@foxglove-studio/app/actions/panels";
 import Button from "@foxglove-studio/app/components/Button";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import Flex from "@foxglove-studio/app/components/Flex";
 import Icon from "@foxglove-studio/app/components/Icon";
 import Item from "@foxglove-studio/app/components/Menu/Item";
@@ -260,138 +260,136 @@ function NodePlayground(props: Props) {
     [scriptBackStack],
   );
 
-  return (
-    <Dimensions>
-      {({ height, width }) => (
-        <Flex col style={{ height, position: "relative" }}>
-          <PanelToolbar floating menuContent={<NodePlaygroundSettings {...props} />} />
-          <Flex style={{ height, width }}>
-            <Sidebar
-              explorer={explorer}
-              updateExplorer={updateExplorer}
-              selectNode={(nodeId) => {
-                if (selectedNodeId && currentScript && isCurrentScriptSelectedNode) {
-                  // Save current state so that user can seamlessly go back to previous work.
-                  setUserNodes({
-                    [selectedNodeId]: { ...selectedNode, sourceCode: currentScript.code },
-                  });
-                }
-                saveConfig({ selectedNodeId: nodeId });
-              }}
-              deleteNode={(nodeId) => {
-                setUserNodes({ ...userNodes, [nodeId]: undefined });
-                saveConfig({ selectedNodeId: undefined });
-              }}
-              selectedNodeId={selectedNodeId}
-              userNodes={userNodes}
-              userNodeDiagnostics={userNodeDiagnostics}
-              script={currentScript}
-              setScriptOverride={setScriptOverride}
-              addNewNode={addNewNode}
-            />
-            <Flex col>
-              <Flex
-                start
-                style={{
-                  flexGrow: 0,
-                  backgroundColor: colors.DARK1,
-                  alignItems: "center",
-                }}
-              >
-                {scriptBackStack.length > 1 && (
-                  <Icon
-                    large
-                    tooltip="Go back"
-                    dataTest="go-back"
-                    style={{ color: colors.DARK9 }}
-                    onClick={goBack}
-                  >
-                    <ArrowLeftIcon />
-                  </Icon>
-                )}
-                {selectedNodeId && (
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      placeholder="node name"
-                      value={inputTitle}
-                      disabled={!currentScript || currentScript.readOnly}
-                      style={inputStyle}
-                      spellCheck={false}
-                      onChange={(e) => {
-                        const newNodeName = e.target.value;
-                        setUserNodes({
-                          ...userNodes,
-                          [selectedNodeId]: { ...selectedNode, name: newNodeName },
-                        });
-                      }}
-                    />
-                    <UnsavedDot isSaved={isNodeSaved} />
-                  </div>
-                )}
-                <Icon
-                  large
-                  tooltip="new node"
-                  dataTest="new-node"
-                  style={{ color: colors.DARK9, padding: "0 5px" }}
-                  onClick={addNewNode}
-                >
-                  <PlusIcon />
-                </Icon>
-              </Flex>
+  const { width, height } = useResizeDetector();
 
-              <Flex col style={{ flexGrow: 1, position: "relative" }}>
-                {!selectedNodeId && (
-                  <WelcomeScreen addNewNode={addNewNode as any} updateExplorer={updateExplorer} />
-                )}
-                <div
-                  key={`${height}x${width}`}
-                  data-nativeundoredo="true"
-                  style={{
-                    height: "100%",
-                    width: "100%",
-                    display: selectedNodeId ? "initial" : "none",
-                    /* Ensures the monaco-editor starts loading before the user opens it */
+  return (
+    <Flex col style={{ height, position: "relative" }}>
+      <PanelToolbar floating menuContent={<NodePlaygroundSettings {...props} />} />
+      <Flex style={{ height, width }}>
+        <Sidebar
+          explorer={explorer}
+          updateExplorer={updateExplorer}
+          selectNode={(nodeId) => {
+            if (selectedNodeId && currentScript && isCurrentScriptSelectedNode) {
+              // Save current state so that user can seamlessly go back to previous work.
+              setUserNodes({
+                [selectedNodeId]: { ...selectedNode, sourceCode: currentScript.code },
+              });
+            }
+            saveConfig({ selectedNodeId: nodeId });
+          }}
+          deleteNode={(nodeId) => {
+            setUserNodes({ ...userNodes, [nodeId]: undefined });
+            saveConfig({ selectedNodeId: undefined });
+          }}
+          selectedNodeId={selectedNodeId}
+          userNodes={userNodes}
+          userNodeDiagnostics={userNodeDiagnostics}
+          script={currentScript}
+          setScriptOverride={setScriptOverride}
+          addNewNode={addNewNode}
+        />
+        <Flex col>
+          <Flex
+            start
+            style={{
+              flexGrow: 0,
+              backgroundColor: colors.DARK1,
+              alignItems: "center",
+            }}
+          >
+            {scriptBackStack.length > 1 && (
+              <Icon
+                large
+                tooltip="Go back"
+                dataTest="go-back"
+                style={{ color: colors.DARK9 }}
+                onClick={goBack}
+              >
+                <ArrowLeftIcon />
+              </Icon>
+            )}
+            {selectedNodeId && (
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder="node name"
+                  value={inputTitle}
+                  disabled={!currentScript || currentScript.readOnly}
+                  style={inputStyle}
+                  spellCheck={false}
+                  onChange={(e) => {
+                    const newNodeName = e.target.value;
+                    setUserNodes({
+                      ...userNodes,
+                      [selectedNodeId]: { ...selectedNode, name: newNodeName },
+                    });
                   }}
-                >
-                  <React.Suspense
-                    fallback={
-                      <Flex center style={{ width: "100%", height: "100%" }}>
-                        <Icon large>
-                          <SpinningLoadingIcon />
-                        </Icon>
-                      </Flex>
-                    }
-                  >
-                    {editorForStorybook || (
-                      <Editor
-                        autoFormatOnSave={!!autoFormatOnSave}
-                        script={currentScript}
-                        setScriptCode={setScriptCode}
-                        setScriptOverride={setScriptOverride}
-                        vimMode={vimMode}
-                        rosLib={rosLib}
-                        resizeKey={`${width}-${height}-${explorer || "none"}-${
-                          selectedNodeId || "none"
-                        }`}
-                        save={saveNode}
-                      />
-                    )}
-                  </React.Suspense>
-                </div>
-                <BottomBar
-                  nodeId={selectedNodeId}
-                  isSaved={isNodeSaved}
-                  save={() => saveNode(currentScript?.code)}
-                  diagnostics={selectedNodeDiagnostics}
-                  logs={selectedNodeLogs}
                 />
-              </Flex>
-            </Flex>
+                <UnsavedDot isSaved={isNodeSaved} />
+              </div>
+            )}
+            <Icon
+              large
+              tooltip="new node"
+              dataTest="new-node"
+              style={{ color: colors.DARK9, padding: "0 5px" }}
+              onClick={addNewNode}
+            >
+              <PlusIcon />
+            </Icon>
+          </Flex>
+
+          <Flex col style={{ flexGrow: 1, position: "relative" }}>
+            {!selectedNodeId && (
+              <WelcomeScreen addNewNode={addNewNode as any} updateExplorer={updateExplorer} />
+            )}
+            <div
+              key={`${height}x${width}`}
+              data-nativeundoredo="true"
+              style={{
+                height: "100%",
+                width: "100%",
+                display: selectedNodeId ? "initial" : "none",
+                /* Ensures the monaco-editor starts loading before the user opens it */
+              }}
+            >
+              <React.Suspense
+                fallback={
+                  <Flex center style={{ width: "100%", height: "100%" }}>
+                    <Icon large>
+                      <SpinningLoadingIcon />
+                    </Icon>
+                  </Flex>
+                }
+              >
+                {editorForStorybook || (
+                  <Editor
+                    autoFormatOnSave={!!autoFormatOnSave}
+                    script={currentScript}
+                    setScriptCode={setScriptCode}
+                    setScriptOverride={setScriptOverride}
+                    vimMode={vimMode}
+                    rosLib={rosLib}
+                    resizeKey={`${width}-${height}-${explorer || "none"}-${
+                      selectedNodeId || "none"
+                    }`}
+                    save={saveNode}
+                  />
+                )}
+              </React.Suspense>
+            </div>
+            <BottomBar
+              nodeId={selectedNodeId}
+              isSaved={isNodeSaved}
+              save={() => saveNode(currentScript?.code)}
+              diagnostics={selectedNodeDiagnostics}
+              logs={selectedNodeLogs}
+            />
           </Flex>
         </Flex>
-      )}
-    </Dimensions>
+      </Flex>
+    </Flex>
   );
 }
 

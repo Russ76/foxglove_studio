@@ -21,6 +21,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import ReactResizeDetector from "react-resize-detector";
 import {
   Worldview,
   PolygonBuilder,
@@ -36,7 +37,6 @@ import { $Shape } from "utility-types";
 
 import useTopicTree, { TopicTreeContext } from "./useTopicTree";
 import useDataSourceInfo from "@foxglove-studio/app/PanelAPI/useDataSourceInfo";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import { useExperimentalFeature } from "@foxglove-studio/app/components/ExperimentalFeatures";
 import KeyListener from "@foxglove-studio/app/components/KeyListener";
 import Modal from "@foxglove-studio/app/components/Modal";
@@ -748,14 +748,14 @@ export default function Layout({
               }
             >
               {(!isDemoMode || (isDemoMode && isHovered)) && (
-                <Dimensions>
+                <ReactResizeDetector handleWidth handleHeight>
                   {({ width: containerWidth, height: containerHeight }) => (
                     <TopicTree
                       allKeys={allKeys}
                       availableNamespacesByTopic={availableNamespacesByTopic}
                       checkedKeys={checkedKeys}
-                      containerHeight={containerHeight}
-                      containerWidth={containerWidth}
+                      containerHeight={containerHeight ?? 0}
+                      containerWidth={containerWidth ?? 0}
                       derivedCustomSettingsByKey={derivedCustomSettingsByKey}
                       expandedKeys={expandedKeys}
                       filterText={filterText}
@@ -781,7 +781,7 @@ export default function Layout({
                       visibleTopicsCountByKey={visibleTopicsCountByKey}
                     />
                   )}
-                </Dimensions>
+                </ReactResizeDetector>
               )}
               {currentEditingTopic && (
                 <TopicSettingsModal

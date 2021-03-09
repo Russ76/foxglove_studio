@@ -13,14 +13,14 @@
 
 import { AnnotationOptions } from "chartjs-plugin-annotation";
 import flatten from "lodash/flatten";
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
+import { useResizeDetector } from "react-resize-detector";
 import { createSelector } from "reselect";
 import { Time } from "rosbag";
 import { v4 as uuidv4 } from "uuid";
 
 import styles from "./PlotChart.module.scss";
 import { PlotXAxisVal } from "./index";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import { ScaleOptions } from "@foxglove-studio/app/components/ReactChartjs";
 import TimeBasedChart, {
   ChartDefaultView,
@@ -422,32 +422,30 @@ export default memo<PlotChartProps>(function PlotChart(props: PlotChartProps) {
     tooltips,
     xAxisVal,
   } = props;
-  const annotations = getAnnotations(paths);
+
+  const annotations = useMemo(() => getAnnotations(paths), [paths]);
+  const { width, height } = useResizeDetector();
 
   return (
     <div className={styles.root}>
-      <Dimensions>
-        {({ width, height }) => (
-          <TimeBasedChart // Force a redraw every time the x-axis value changes.
-            key={xAxisVal}
-            isSynced
-            zoom
-            width={width}
-            height={height}
-            data={{ datasets }}
-            tooltips={tooltips}
-            annotations={annotations}
-            type="scatter"
-            yAxes={yAxes({ minY: minYValue, maxY: maxYValue, scaleId: Y_AXIS_ID })}
-            saveCurrentView={saveCurrentView}
-            xAxisIsPlaybackTime={xAxisVal === "timestamp"}
-            scaleOptions={scaleOptions}
-            currentTime={currentTime}
-            defaultView={defaultView}
-            onClick={onClick}
-          />
-        )}
-      </Dimensions>
+      <TimeBasedChart // Force a redraw every time the x-axis value changes.
+        key={xAxisVal}
+        isSynced
+        zoom
+        width={width ?? 0}
+        height={height ?? 0}
+        data={{ datasets }}
+        tooltips={tooltips}
+        annotations={annotations}
+        type="scatter"
+        yAxes={yAxes({ minY: minYValue, maxY: maxYValue, scaleId: Y_AXIS_ID })}
+        saveCurrentView={saveCurrentView}
+        xAxisIsPlaybackTime={xAxisVal === "timestamp"}
+        scaleOptions={scaleOptions}
+        currentTime={currentTime}
+        defaultView={defaultView}
+        onClick={onClick}
+      />
     </div>
   );
 });

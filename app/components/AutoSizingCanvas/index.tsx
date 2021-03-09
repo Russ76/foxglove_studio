@@ -12,8 +12,7 @@
 //   You may not use this file except in compliance with the License.
 
 import React, { useRef, useLayoutEffect } from "react";
-
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
+import { useResizeDetector } from "react-resize-detector";
 
 type Draw = (context: CanvasRenderingContext2D, width: number, height: number) => void;
 
@@ -60,17 +59,17 @@ function Canvas({
   );
 }
 
-const AutoSizingCanvas = ({ draw, overrideDevicePixelRatioForTest }: AutoSizingCanvasProps) => (
-  <Dimensions>
-    {({ width, height }) => (
-      <Canvas
-        width={width}
-        height={height}
-        draw={draw}
-        overrideDevicePixelRatioForTest={overrideDevicePixelRatioForTest}
-      />
-    )}
-  </Dimensions>
-);
+const AutoSizingCanvas = ({ draw, overrideDevicePixelRatioForTest }: AutoSizingCanvasProps) => {
+  const { width, height } = useResizeDetector();
+
+  return (
+    <Canvas
+      width={width ?? 0}
+      height={height ?? 0}
+      draw={draw}
+      overrideDevicePixelRatioForTest={overrideDevicePixelRatioForTest}
+    />
+  );
+};
 
 export default AutoSizingCanvas;
