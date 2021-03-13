@@ -13,8 +13,6 @@
 
 import { sortBy } from "lodash";
 import * as React from "react";
-import { hot } from "react-hot-loader/root";
-import { $Shape } from "utility-types";
 
 import DiagnosticStatus from "./DiagnosticStatus";
 import helpContent from "./DiagnosticStatusPanel.help.md";
@@ -40,7 +38,7 @@ export type Config = {
 
 type Props = {
   config: Config;
-  saveConfig: (arg0: $Shape<Config>) => void;
+  saveConfig: (arg0: Partial<Config>) => void;
   topics: Topic[];
   openSiblingPanel: (arg0: string, cb: (arg0: PanelConfig) => PanelConfig) => void;
 };
@@ -165,4 +163,4 @@ class DiagnosticStatusPanel extends React.Component<Props> {
   }
 }
 
-export default hot(Panel<Config>(DiagnosticStatusPanel as any));
+export default Panel<Config>(DiagnosticStatusPanel as any);

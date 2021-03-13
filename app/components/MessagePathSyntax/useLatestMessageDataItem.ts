@@ -16,30 +16,25 @@ import { useCallback, useMemo } from "react";
 import parseRosPath from "./parseRosPath";
 import {
   useCachedGetMessagePathDataItems,
-  MessagePathDataItem,
+  MessageAndData,
 } from "./useCachedGetMessagePathDataItems";
 import * as PanelAPI from "@foxglove-studio/app/PanelAPI";
 import { useMessagePipeline } from "@foxglove-studio/app/components/MessagePipeline";
 import { Message, MessageFormat } from "@foxglove-studio/app/players/types";
 import { useChangeDetector } from "@foxglove-studio/app/util/hooks";
 
-type MessageAndData = { message: Message; queriedData: MessagePathDataItem[] };
-
 // Get the last message for a path, but *after* applying filters. In other words, we'll keep the
 // last message that matched.
 export function useLatestMessageDataItem(
   path: string,
   format: MessageFormat,
-): MessageAndData | null | undefined {
+): MessageAndData | undefined {
   const rosPath = useMemo(() => parseRosPath(path), [path]);
   const topics = useMemo(() => (rosPath ? [rosPath.topicName] : []), [rosPath]);
   const cachedGetMessagePathDataItems = useCachedGetMessagePathDataItems([path]);
 
-  const addMessages: (
-    arg0: MessageAndData | null | undefined,
-    arg1: ReadonlyArray<Message>,
-  ) => MessageAndData | null | undefined = useCallback(
-    (prevMessageAndData: MessageAndData | null | undefined, messages: ReadonlyArray<Message>) => {
+  const addMessages = useCallback(
+    (prevMessageAndData: MessageAndData | undefined, messages: readonly Message[]) => {
       // Iterate in reverse so we can early-return and not process all messages.
       for (let i = messages.length - 1; i >= 0; --i) {
         const message = messages[i];
@@ -58,7 +53,7 @@ export function useLatestMessageDataItem(
   );
 
   const restore = useCallback(
-    (prevMessageAndData?: MessageAndData | null): MessageAndData | null | undefined => {
+    (prevMessageAndData?: MessageAndData): MessageAndData | undefined => {
       if (prevMessageAndData) {
         const queriedData = cachedGetMessagePathDataItems(path, prevMessageAndData.message);
         if (queriedData && queriedData.length > 0) {
@@ -79,10 +74,10 @@ export function useLatestMessageDataItem(
   }
 
   const addMessageCallbackName = format === "parsedMessages" ? "addMessages" : "addBobjects";
-  const messageAndData = PanelAPI.useMessageReducer({
+  const messageAndData = PanelAPI.useMessageReducer<MessageAndData | undefined>({
     topics,
     [addMessageCallbackName]: addMessages,
-    restore: restore as any,
+    restore,
   });
-  return rosPath ? (messageAndData as any) : undefined;
+  return rosPath ? messageAndData : undefined;
 }

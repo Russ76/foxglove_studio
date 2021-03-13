@@ -11,30 +11,24 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-@import "@foxglove-studio/app/styles/colors.module.scss";
+export const datatypes = {
+  "some/datatype": { fields: [{ name: "index", type: "int32" }] },
+};
 
-.layout {
-  height: 0;
-  flex: 1 1 auto;
-}
-
-$spacing: 14px;
-
-.toolbarItem {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  min-width: 40px;
-
-  :global(.icon) {
-    color: white;
-  }
-
-  // Allow interacting with buttons in the title bar without dragging the window
-  -webkit-app-region: no-drag;
-}
-
-.playback-controls {
-  background-color: $dark2;
-}
+export const messages = Object.freeze([
+  {
+    topic: "/some/topic",
+    receiveTime: { sec: 100, nsec: 0 },
+    message: { index: 0 },
+  },
+  {
+    topic: "/some/topic",
+    receiveTime: { sec: 101, nsec: 0 },
+    message: { index: 1 },
+  },
+  {
+    topic: "/some/topic",
+    receiveTime: { sec: 102, nsec: 0 },
+    message: { index: 2 },
+  },
+] as const);

@@ -25,8 +25,10 @@ import TimeBasedChartTooltip from "./TimeBasedChartTooltip";
 import { clearHoverValue, setHoverValue } from "@foxglove-studio/app/actions/hoverValue";
 import Button from "@foxglove-studio/app/components/Button";
 import KeyListener from "@foxglove-studio/app/components/KeyListener";
-import { MessageHistoryItem } from "@foxglove-studio/app/components/MessageHistoryDEPRECATED";
-import { MessagePathDataItem } from "@foxglove-studio/app/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
+import {
+  MessageAndData,
+  MessagePathDataItem,
+} from "@foxglove-studio/app/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 import { useMessagePipeline } from "@foxglove-studio/app/components/MessagePipeline";
 import ChartComponent, {
   HoveredElement,
@@ -61,7 +63,7 @@ export type TooltipItem = {
   headerStamp: Time | null | undefined;
 };
 
-export const getTooltipItemForMessageHistoryItem = (item: MessageHistoryItem): TooltipItem => {
+export const getTooltipItemForMessageHistoryItem = (item: MessageAndData): TooltipItem => {
   const { message } = item.message;
   const headerStamp = isBobject(message)
     ? maybeGetBobjectHeaderStamp(message)
@@ -155,9 +157,9 @@ type FollowPlaybackState = Readonly<{
 type Point = Readonly<{ x: number; y: number | string }>;
 
 type DataSet = Readonly<{
-  data: ReadonlyArray<Point>;
+  data: readonly Point[];
   label: string;
-  borderDash?: ReadonlyArray<number>;
+  borderDash?: readonly number[];
   color?: string;
   showLine?: boolean;
 }>;
@@ -174,7 +176,7 @@ const datumStringPixel = (
 
 // Exported for tests
 export const filterDatasets = (
-  datasets: ReadonlyArray<DataSet>,
+  datasets: readonly DataSet[],
   linesToHide: {
     [key: string]: boolean;
   },
@@ -206,7 +208,7 @@ export type Props = {
   width: number;
   height: number;
   zoom: boolean;
-  data: { datasets: ReadonlyArray<DataSet>; yLabels?: ReadonlyArray<string>; minIsZero?: boolean };
+  data: { datasets: readonly DataSet[]; yLabels?: readonly string[]; minIsZero?: boolean };
   tooltips?: TimeBasedChartTooltipData[];
   xAxes?: Chart.ChartXAxe[];
   yAxes: Chart.ChartYAxe[];
@@ -284,7 +286,7 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
   }, [pauseFrame]);
 
   const { saveCurrentView, yAxes } = props;
-  const scaleBounds = useRef<ReadonlyArray<ScaleBounds> | null | undefined>();
+  const scaleBounds = useRef<readonly ScaleBounds[] | null | undefined>();
   const hoverBar = useRef<HTMLDivElement | null>(null);
   const onScaleBoundsUpdate = useCallback(
     (scales: ScaleBounds[]) => {
@@ -321,7 +323,7 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
       }
       if (
         lastPanTime.current &&
-        // @ts-ignore while valid js we should fix this arithmatic operation on dates
+        // @ts-expect-error while valid js we should fix this arithmatic operation on dates
         new Date() - lastPanTime.current < PAN_CLICK_SUPPRESS_THRESHOLD_MS
       ) {
         // Ignore clicks that happen too soon after a pan. Sometimes clicks get fired at the end of
@@ -648,7 +650,7 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
         if (
           currentTime != null &&
           (lastPanTime.current == null ||
-            // @ts-ignore while valid js we should fix this arithmatic operation on dates
+            // @ts-expect-error while valid js we should fix this arithmatic operation on dates
             new Date() - lastPanTime.current > FOLLOW_PLAYBACK_PAN_THRESHOLD_MS)
         ) {
           firstXAxisTicks.min = currentTime + followPlaybackState.xOffsetMin;

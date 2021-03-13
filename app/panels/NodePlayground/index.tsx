@@ -16,11 +16,9 @@ import CheckboxBlankOutlineIcon from "@mdi/svg/svg/checkbox-blank-outline.svg";
 import CheckboxMarkedIcon from "@mdi/svg/svg/checkbox-marked.svg";
 import PlusIcon from "@mdi/svg/svg/plus.svg";
 import * as React from "react";
-import { hot } from "react-hot-loader/root";
 import { useSelector, useDispatch } from "react-redux";
 import { useResizeDetector } from "react-resize-detector";
 import styled from "styled-components";
-import { $Shape } from "utility-types";
 import { v4 as uuidv4 } from "uuid";
 
 import { Script } from "./script";
@@ -69,7 +67,7 @@ type Config = {
 
 type Props = {
   config: Config;
-  saveConfig: (arg0: $Shape<Config>) => void;
+  saveConfig: (arg0: Partial<Config>) => void;
 };
 
 const UnsavedDot = styled.div`
@@ -400,4 +398,4 @@ NodePlayground.defaultConfig = {
   autoFormatOnSave: true,
 };
 
-export default hot(Panel<Config>(NodePlayground as any));
+export default Panel<Config>(NodePlayground as any);

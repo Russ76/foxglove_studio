@@ -18,7 +18,6 @@ import MenuDownIcon from "@mdi/svg/svg/menu-down.svg";
 import WavesIcon from "@mdi/svg/svg/waves.svg";
 import cx from "classnames";
 import { last, uniq } from "lodash";
-import { hot } from "react-hot-loader/root";
 import styled from "styled-components";
 
 import ImageCanvas from "./ImageCanvas";
@@ -38,13 +37,13 @@ import Dropdown from "@foxglove-studio/app/components/Dropdown";
 import DropdownItem from "@foxglove-studio/app/components/Dropdown/DropdownItem";
 import dropDownStyles from "@foxglove-studio/app/components/Dropdown/index.module.scss";
 import EmptyState from "@foxglove-studio/app/components/EmptyState";
-import { useExperimentalFeature } from "@foxglove-studio/app/components/ExperimentalFeatures";
 import Flex from "@foxglove-studio/app/components/Flex";
 import Icon from "@foxglove-studio/app/components/Icon";
 import { Item, SubMenu } from "@foxglove-studio/app/components/Menu";
 import { useMessagePipeline } from "@foxglove-studio/app/components/MessagePipeline";
 import Panel from "@foxglove-studio/app/components/Panel";
 import PanelToolbar from "@foxglove-studio/app/components/PanelToolbar";
+import { useExperimentalFeature } from "@foxglove-studio/app/context/ExperimentalFeaturesContext";
 import { getGlobalHooks } from "@foxglove-studio/app/loadWebviz";
 import { Message, TypedMessage } from "@foxglove-studio/app/players/types";
 import inScreenshotTests from "@foxglove-studio/app/stories/inScreenshotTests";
@@ -209,7 +208,7 @@ function renderEmptyState(
 
 function useOptionallySynchronizedMessages(
   shouldSynchronize: boolean,
-  topics: ReadonlyArray<PanelAPI.RequestedTopic>,
+  topics: readonly PanelAPI.RequestedTopic[],
 ) {
   const memoizedTopics = useDeepMemo(topics);
   const reducers = useMemo(
@@ -661,4 +660,4 @@ function ImageView(props: Props) {
 ImageView.panelType = "ImageViewPanel";
 ImageView.defaultConfig = (getGlobalHooks() as any).perPanelHooks().ImageView.defaultConfig;
 
-export default hot(Panel<Config>(ImageView as any));
+export default Panel<Config>(ImageView as any);

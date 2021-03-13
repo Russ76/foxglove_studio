@@ -20,10 +20,8 @@ import MoreIcon from "@mdi/svg/svg/unfold-more-horizontal.svg";
 // eslint-disable-next-line no-restricted-imports
 import { first, isEqual, get, last } from "lodash";
 import React, { useState, useCallback, useMemo } from "react";
-import { hot } from "react-hot-loader/root";
 import ReactHoverObserver from "react-hover-observer";
 import Tree from "react-json-tree";
-import { $Shape } from "utility-types";
 
 import { HighlightedValue, SDiffSpan, MaybeCollapsedValue } from "./Diff";
 import Metadata from "./Metadata";
@@ -92,7 +90,7 @@ export type RawMessagesConfig = {
 
 type Props = {
   config: RawMessagesConfig;
-  saveConfig: (arg0: $Shape<RawMessagesConfig>) => void;
+  saveConfig: (arg0: Partial<RawMessagesConfig>) => void;
   openSiblingPanel: (arg0: string, cb: (arg0: PanelConfig) => PanelConfig) => void;
 };
 
@@ -569,10 +567,7 @@ function RawMessages(props: Props) {
                   path={diffTopicPath}
                   onChange={onDiffTopicPathChange}
                   inputStyle={{ height: "100%" }}
-                  {
-                    /* @ts-ignore-error MessagePathInput is not properly passing props through? */
-                    ...{ prioritizedDatatype: topic?.datatype }
-                  }
+                  {...{ prioritizedDatatype: topic?.datatype }}
                 />
               ) : null}
             </Flex>
@@ -593,4 +588,4 @@ RawMessages.defaultConfig = {
 };
 RawMessages.panelType = "RawMessages";
 
-export default hot(Panel<RawMessagesConfig>(RawMessages as any));
+export default Panel<RawMessagesConfig>(RawMessages as any);

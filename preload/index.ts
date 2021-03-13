@@ -2,26 +2,34 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-// @sentry/electron isn't able to detect that the renderer should be loaded when in the preload script
-// instead if tries to load esm/main which is only applicable for the main script
-import { init as initSentry } from "@sentry/electron/esm/renderer";
+import { init as initSentry } from "@sentry/electron";
 import { contextBridge, ipcRenderer } from "electron";
 
-import { OsContext, OsContextWindowEvent } from "@foxglove-studio/app/OsContext";
+import { OsContext, OsContextForwardedEvent } from "@foxglove-studio/app/OsContext";
 
-if (process.env.SENTRY_DSN !== undefined) {
+if (typeof process.env.SENTRY_DSN === "string") {
   initSentry({ dsn: process.env.SENTRY_DSN });
 }
 
 type IpcListener = (ev: unknown, ...args: unknown[]) => void;
 const menuClickListeners = new Map<string, IpcListener>();
 
+window.addEventListener("DOMContentLoaded", () => {
+  // This input element receives generated dom events from main thread to inject File objects
+  // See the comments in desktop/index.ts regarding this feature
+  const input = document.createElement("input");
+  input.setAttribute("hidden", "true");
+  input.setAttribute("type", "file");
+  input.setAttribute("id", "electron-open-file-input");
+  document.body.appendChild(input);
+});
+
 const ctx: OsContext = {
   platform: process.platform,
   handleToolbarDoubleClick() {
     ipcRenderer.send("window.toolbar-double-clicked");
   },
-  addWindowEventListener(eventName: OsContextWindowEvent, handler: () => void) {
+  addIpcEventListener(eventName: OsContextForwardedEvent, handler: () => void) {
     ipcRenderer.on(eventName, () => handler());
   },
   async menuAddInputSource(name: string, handler: () => void) {
@@ -54,4 +62,5 @@ const ctx: OsContext = {
 // and the outside world. These restrictions impact what the api surface can expose and how.
 //
 // i.e.: returning a class instance doesn't work because prototypes do not survive the boundary
-contextBridge.exposeInMainWorld("ctxbridge", ctx);
+const { exposeInMainWorld: exposeToRenderer } = contextBridge; // poorly named
+exposeToRenderer("ctxbridge", ctx);

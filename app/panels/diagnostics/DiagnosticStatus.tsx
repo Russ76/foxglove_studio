@@ -21,7 +21,6 @@ import * as React from "react";
 import { createSelector } from "reselect";
 import sanitizeHtml from "sanitize-html";
 import styled from "styled-components";
-import { $Shape } from "utility-types";
 
 import style from "./DiagnosticStatus.module.scss";
 import { LEVEL_NAMES, DiagnosticInfo, KeyValue, DiagnosticStatusMessage } from "./util";
@@ -43,7 +42,7 @@ type Props = {
   topicToRender: string;
   openSiblingPanel: (arg0: string, cb: (arg0: PanelConfig) => PanelConfig) => void;
   collapsedSections: { name: string; section: string }[];
-  saveConfig: (arg0: $Shape<Config>) => void;
+  saveConfig: (arg0: Partial<Config>) => void;
 };
 
 const ResizeHandle = styled.div.attrs<{ splitFraction: number }>(({ splitFraction }) => ({
@@ -102,7 +101,6 @@ type FormattedKeyValue = {
 };
 
 const allowedTags = [
-  // this comment forces the array onto multiple lines :)
   "b",
   "br",
   "center",
@@ -328,7 +326,7 @@ class DiagnosticStatus extends React.Component<Props, any> {
       openSiblingPanel,
       topicToRender,
     } = this.props;
-    const statusClass = style[`status-${LEVEL_NAMES[status.level] || "unknown"}`];
+    const statusClass = style[`status-${LEVEL_NAMES[status.level] ?? "unknown"}`];
 
     return (
       <div>

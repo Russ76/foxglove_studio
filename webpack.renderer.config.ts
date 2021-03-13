@@ -2,37 +2,37 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import rehypePrism from "@mapbox/rehype-prism";
+import ReactRefreshPlugin from "@pmmmwh/react-refresh-webpack-plugin";
 import CircularDependencyPlugin from "circular-dependency-plugin";
 import ForkTsCheckerWebpackPlugin from "fork-ts-checker-webpack-plugin";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import MonacoWebpackPlugin from "monaco-editor-webpack-plugin";
 import path from "path";
-import retext from "retext";
-import retextSmartypants from "retext-smartypants";
-import webpack, { Configuration, EnvironmentPlugin, WebpackPluginInstance } from "webpack";
+import webpack, {
+  Configuration,
+  EnvironmentPlugin,
+  RuleSetUseItem,
+  WebpackPluginInstance,
+} from "webpack";
 
 import uncheckedIndexAccessFiles from "./UncheckedIndexAccess.json";
 import { WebpackArgv } from "./WebpackArgv";
-
-declare const visit: any;
-
-// Enable smart quotes:
-// https://github.com/mdx-js/mdx/blob/ad58be384c07672dc415b3d9d9f45dcebbfd2eb8/docs/advanced/retext-plugins.md
-const smartypantsProcessor = retext().use(retextSmartypants);
-function remarkSmartypants() {
-  function transformer(tree: unknown) {
-    visit(tree, "text", (node: { value: string }) => {
-      node.value = String(smartypantsProcessor.processSync(node.value));
-    });
-  }
-  return transformer;
-}
 
 // Common configuration shared by Storybook and the main Webpack build
 export function makeConfig(_: unknown, argv: WebpackArgv): Configuration {
   const isDev = argv.mode === "development";
   const isServe = argv.env?.WEBPACK_SERVE ?? false;
+
+  const plugins: WebpackPluginInstance[] = [];
+  const ruleUse: RuleSetUseItem[] = [];
+
+  if (isServe) {
+    plugins.push(new ReactRefreshPlugin());
+    ruleUse.push({
+      loader: "babel-loader",
+      options: { plugins: ["react-refresh/babel"] },
+    });
+  }
 
   return {
     // force web target instead of electron-render
@@ -41,7 +41,7 @@ export function makeConfig(_: unknown, argv: WebpackArgv): Configuration {
     target: "web",
     context: path.resolve("./app"),
     entry: "./index.tsx",
-    devtool: isDev ? "eval-cheap-source-map" : "source-map",
+    devtool: isDev ? "eval-cheap-module-source-map" : "nosources-source-map",
 
     optimization: {
       minimize: false,
@@ -85,25 +85,19 @@ export function makeConfig(_: unknown, argv: WebpackArgv): Configuration {
         {
           test: /\.tsx?$/,
           exclude: /node_modules/,
-          use: {
-            loader: "ts-loader",
-            options: {
-              transpileOnly: true,
-              // https://github.com/TypeStrong/ts-loader#onlycompilebundledfiles
-              // avoid looking at files which are not part of the bundle
-              onlyCompileBundledFiles: true,
+          use: [
+            ...ruleUse,
+            {
+              loader: "ts-loader",
+              options: {
+                transpileOnly: true,
+                // https://github.com/TypeStrong/ts-loader#onlycompilebundledfiles
+                // avoid looking at files which are not part of the bundle
+                onlyCompileBundledFiles: true,
+                configFile: isDev ? "tsconfig.dev.json" : "tsconfig.json",
+              },
             },
-          },
-        },
-        {
-          test: /\.mdx$/,
-          use: {
-            loader: "@mdx-js/loader",
-            options: {
-              hastPlugins: [rehypePrism],
-              mdPlugins: [remarkSmartypants],
-            },
-          },
+          ],
         },
         {
           // "?raw" imports are used to load stringified typescript in Node Playground
@@ -144,7 +138,7 @@ export function makeConfig(_: unknown, argv: WebpackArgv): Configuration {
               loader: "css-loader",
               options: {
                 modules: {
-                  localIdentName: "[path][name]-[sha512:hash:base32:5]--[local]",
+                  localIdentName: "[path][name]-[contenthash:base64:5]--[local]",
                 },
                 sourceMap: true,
               },
@@ -168,6 +162,7 @@ export function makeConfig(_: unknown, argv: WebpackArgv): Configuration {
       ],
     },
     plugins: [
+      ...plugins,
       new CircularDependencyPlugin({
         exclude: /node_modules/,
         onDetected({ paths, compilation }) {
@@ -191,7 +186,6 @@ export function makeConfig(_: unknown, argv: WebpackArgv): Configuration {
       new webpack.DefinePlugin({
         // Should match webpack-defines.d.ts
         APP_NAME: JSON.stringify("Foxglove Studio"),
-        SENTRY_DSN: process.env.SENTRY_DSN,
       }),
       // https://webpack.js.org/plugins/ignore-plugin/#example-of-ignoring-moment-locales
       new webpack.IgnorePlugin({
@@ -251,6 +245,7 @@ export default (env: unknown, argv: WebpackArgv): Configuration => {
     new HtmlWebpackPlugin({
       templateContent: `
         <html>
+          <head><meta charset="utf-8"></head>
           <script>global = globalThis;</script>
           <body>
             <div id="root"></div>

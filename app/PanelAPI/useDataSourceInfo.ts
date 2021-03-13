@@ -24,10 +24,10 @@ import { RosDatatypes } from "@foxglove-studio/app/types/RosDatatypes";
 // Metadata about the source of data currently being displayed in Webviz.
 // This is not expected to change often, usually when changing data sources.
 export type DataSourceInfo = {
-  topics: ReadonlyArray<Topic>;
+  topics: readonly Topic[];
   datatypes: RosDatatypes;
   capabilities: string[];
-  startTime: Time | null | undefined; // Only `startTime`, since `endTime` can change rapidly when connected to a live system.
+  startTime?: Time; // Only `startTime`, since `endTime` can change rapidly when connected to a live system.
   playerId: string;
 };
 
@@ -43,8 +43,7 @@ export default function useDataSourceInfo(): DataSourceInfo {
   );
   const startTime = useMessagePipeline(
     useCallback(
-      ({ playerState: { activeData } }: MessagePipelineContext) =>
-        activeData && activeData.startTime,
+      ({ playerState: { activeData } }: MessagePipelineContext) => activeData?.startTime,
       [],
     ),
   );
