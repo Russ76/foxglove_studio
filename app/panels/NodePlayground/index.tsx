@@ -15,7 +15,6 @@ import ArrowLeftIcon from "@mdi/svg/svg/arrow-left.svg";
 import CheckboxBlankOutlineIcon from "@mdi/svg/svg/checkbox-blank-outline.svg";
 import CheckboxMarkedIcon from "@mdi/svg/svg/checkbox-marked.svg";
 import PlusIcon from "@mdi/svg/svg/plus.svg";
-import * as React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useResizeDetector } from "react-resize-detector";
 import styled from "styled-components";
@@ -258,10 +257,10 @@ function NodePlayground(props: Props) {
     [scriptBackStack],
   );
 
-  const { width, height } = useResizeDetector();
+  const { width, height, ref: resizeRef } = useResizeDetector();
 
   return (
-    <Flex col style={{ height, position: "relative" }}>
+    <Flex col style={{ height, position: "relative" }} ref={resizeRef}>
       <PanelToolbar floating menuContent={<NodePlaygroundSettings {...props} />} />
       <Flex style={{ height, width }}>
         <Sidebar

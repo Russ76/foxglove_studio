@@ -20,8 +20,7 @@ import DragIcon from "@mdi/svg/svg/drag.svg";
 import FullscreenIcon from "@mdi/svg/svg/fullscreen.svg";
 import TrashCanOutlineIcon from "@mdi/svg/svg/trash-can-outline.svg";
 import cx from "classnames";
-import * as React from "react"; // eslint-disable-line import/no-duplicates
-import { useContext, useState, useCallback, useMemo } from "react"; // eslint-disable-line import/no-duplicates
+import { useContext, useState, useCallback, useMemo } from "react";
 import { MosaicContext, MosaicWindowContext } from "react-mosaic-component";
 import { useDispatch, useSelector, ReactReduxContext } from "react-redux";
 import { useResizeDetector } from "react-resize-detector";
@@ -302,7 +301,9 @@ export default React.memo<Props>(function PanelToolbar(props: Props) {
   const onDragStart = useCallback(() => setIsDragging(true), []);
   const onDragEnd = useCallback(() => setIsDragging(false), []);
   const [containsOpen, setContainsOpen] = useState(false);
-  const { width } = useResizeDetector();
+  const { width, ref: resizeRef } = useResizeDetector({
+    handleHeight: false,
+  });
 
   if (frameless() || hideToolbars) {
     return null;
@@ -310,30 +311,32 @@ export default React.memo<Props>(function PanelToolbar(props: Props) {
 
   const isRendered = isHovered || containsOpen || isDragging || !!isUnknownPanel;
   return (
-    <ChildToggle.ContainsOpen onChange={setContainsOpen}>
-      <div
-        className={cx(styles.panelToolbarContainer, {
-          [styles.floating]: floating,
-          [styles.floatingShow]: floating && isRendered,
-          [styles.hasChildren]: !!children,
-        })}
-      >
-        {(isRendered || !floating) && children}
-        {(isRendered || showHiddenControlsOnHover) && (
-          <PanelToolbarControls
-            isRendered={isRendered}
-            showHiddenControlsOnHover={showHiddenControlsOnHover}
-            floating={floating}
-            helpContent={helpContent}
-            menuContent={menuContent}
-            showPanelName={(width ?? 0) > 360}
-            additionalIcons={additionalIcons}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            isUnknownPanel={!!isUnknownPanel}
-          />
-        )}
-      </div>
-    </ChildToggle.ContainsOpen>
+    <div ref={resizeRef}>
+      <ChildToggle.ContainsOpen onChange={setContainsOpen}>
+        <div
+          className={cx(styles.panelToolbarContainer, {
+            [styles.floating]: floating,
+            [styles.floatingShow]: floating && isRendered,
+            [styles.hasChildren]: !!children,
+          })}
+        >
+          {(isRendered || !floating) && children}
+          {(isRendered || showHiddenControlsOnHover) && (
+            <PanelToolbarControls
+              isRendered={isRendered}
+              showHiddenControlsOnHover={showHiddenControlsOnHover}
+              floating={floating}
+              helpContent={helpContent}
+              menuContent={menuContent}
+              showPanelName={(width ?? 0) > 360}
+              additionalIcons={additionalIcons}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              isUnknownPanel={!!isUnknownPanel}
+            />
+          )}
+        </div>
+      </ChildToggle.ContainsOpen>
+    </div>
   );
 });

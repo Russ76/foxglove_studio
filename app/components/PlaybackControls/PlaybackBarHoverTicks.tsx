@@ -59,7 +59,7 @@ type Props = {
 
 export default React.memo<Props>(function PlaybackBarHoverTicks({ componentId }: Props) {
   const { startTime, endTime } = useMessagePipeline(getStartAndEndTime);
-  const { width } = useResizeDetector();
+  const { width, ref: resizeRef } = useResizeDetector();
 
   const scaleBounds = useMemo<{ current: readonly ScaleBounds[] | null | undefined }>(() => {
     if (width == null || startTime == null || endTime == null) {
@@ -82,9 +82,11 @@ export default React.memo<Props>(function PlaybackBarHoverTicks({ componentId }:
   }, [width, startTime, endTime, componentId]);
 
   return (
-    <HoverBar componentId={componentId} scaleBounds={scaleBounds} isTimestampScale>
-      <TopTick />
-      <BottomTick />
-    </HoverBar>
+    <div ref={resizeRef}>
+      <HoverBar componentId={componentId} scaleBounds={scaleBounds} isTimestampScale>
+        <TopTick />
+        <BottomTick />
+      </HoverBar>
+    </div>
   );
 });

@@ -1865,7 +1865,7 @@ __metadata:
     react-outside-click-handler: 1.3.0
     react-popper: 1.0.0
     react-redux: 7.2.2
-    react-resize-detector: 6.5.0
+    react-resize-detector: 6.6.3
     react-router: 5.2.0
     react-router-dom: 5.2.0
     react-select: 1.2.1
@@ -20269,9 +20269,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-resize-detector@npm:6.5.0":
-  version: 6.5.0
-  resolution: "react-resize-detector@npm:6.5.0"
+"react-resize-detector@npm:6.6.3":
+  version: 6.6.3
+  resolution: "react-resize-detector@npm:6.6.3"
   dependencies:
     "@types/resize-observer-browser": ^0.1.5
     lodash.debounce: ^4.0.8
@@ -20280,7 +20280,7 @@ __metadata:
   peerDependencies:
     react: ^16.0.0 || ^17.0.0
     react-dom: ^16.0.0 || ^17.0.0
-  checksum: 052733908147585427b0ba6136eb28ca09b3d8dd935dd98a99f1b66eafdbec38d01662bbf70f266fabae4a1dbc4a99748fba7d644120a35f9413472cdc5bc90c
+  checksum: e3716e5cf96b214793313cb04db542b5d28ea6e141117036ef91cc50d65caeccfb4323d6c69ee55768b065eb8cfe9a99ec916604889036dd2eb9b583d8a8082a
   languageName: node
   linkType: hard
 

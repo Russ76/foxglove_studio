@@ -12,7 +12,7 @@
 //   You may not use this file except in compliance with the License.
 
 import cx from "classnames";
-import * as React from "react";
+import { forwardRef } from "react";
 
 import styles from "./Flex.module.scss";
 
@@ -48,7 +48,7 @@ type Props = {
   dataTest?: string;
 };
 
-const Flex = (props: Props) => {
+export default forwardRef<HTMLDivElement, Props>((props: Props, ref) => {
   const {
     col,
     row,
@@ -95,6 +95,7 @@ const Flex = (props: Props) => {
   const fullStyle = style ? { ...flexStyle, ...style } : flexStyle;
   return (
     <div
+      ref={ref}
       data-test={dataTest}
       className={combinedClasses}
       style={fullStyle}
@@ -106,7 +107,4 @@ const Flex = (props: Props) => {
       {children}
     </div>
   );
-};
-
-Flex.displayName = "Flex";
-export default Flex;
+});

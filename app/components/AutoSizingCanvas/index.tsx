@@ -11,31 +11,28 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import React, { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useMemo } from "react";
 import { useResizeDetector } from "react-resize-detector";
 
 type Draw = (context: CanvasRenderingContext2D, width: number, height: number) => void;
-
-type CanvasProps = {
-  draw: Draw;
-  width: number;
-  height: number;
-  overrideDevicePixelRatioForTest?: number;
-};
 
 type AutoSizingCanvasProps = {
   draw: Draw;
   overrideDevicePixelRatioForTest?: number;
 };
 
-// Nested within `AutoSizingCanvas` so that componentDidUpdate fires on width/height changes.
-function Canvas({
-  draw,
-  width,
-  height,
-  overrideDevicePixelRatioForTest: ratio = window.devicePixelRatio || 1,
-}: CanvasProps) {
+const AutoSizingCanvas = ({ draw, overrideDevicePixelRatioForTest }: AutoSizingCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { width: maybeWidth, height: maybeHeight } = useResizeDetector({ targetRef: canvasRef });
+
+  const { ratio, width, height } = useMemo(() => {
+    return {
+      ratio: overrideDevicePixelRatioForTest ?? window.devicePixelRatio ?? 1,
+      width: maybeWidth ?? 0,
+      height: maybeHeight ?? 0,
+    };
+  }, [maybeHeight, maybeWidth, overrideDevicePixelRatioForTest]);
+
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -45,6 +42,7 @@ function Canvas({
     if (!ctx) {
       return;
     }
+
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     draw(ctx, width, height);
   });
@@ -55,19 +53,6 @@ function Canvas({
       width={width * ratio}
       height={height * ratio}
       style={{ width, height }}
-    />
-  );
-}
-
-const AutoSizingCanvas = ({ draw, overrideDevicePixelRatioForTest }: AutoSizingCanvasProps) => {
-  const { width, height } = useResizeDetector();
-
-  return (
-    <Canvas
-      width={width ?? 0}
-      height={height ?? 0}
-      draw={draw}
-      overrideDevicePixelRatioForTest={overrideDevicePixelRatioForTest}
     />
   );
 };

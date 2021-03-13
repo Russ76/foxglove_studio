@@ -424,10 +424,10 @@ export default memo<PlotChartProps>(function PlotChart(props: PlotChartProps) {
   } = props;
 
   const annotations = useMemo(() => getAnnotations(paths), [paths]);
-  const { width, height } = useResizeDetector();
+  const { width, height, ref: resizeRef } = useResizeDetector();
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} ref={resizeRef}>
       <TimeBasedChart // Force a redraw every time the x-axis value changes.
         key={xAxisVal}
         isSynced
