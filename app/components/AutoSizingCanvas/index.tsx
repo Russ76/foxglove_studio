@@ -23,7 +23,7 @@ type AutoSizingCanvasProps = {
 
 const AutoSizingCanvas = ({ draw, overrideDevicePixelRatioForTest }: AutoSizingCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { width: maybeWidth, height: maybeHeight } = useResizeDetector({ targetRef: canvasRef });
+  const { width: maybeWidth, height: maybeHeight, ref: resizeRef } = useResizeDetector();
 
   const { ratio, width, height } = useMemo(() => {
     return {
@@ -48,12 +48,14 @@ const AutoSizingCanvas = ({ draw, overrideDevicePixelRatioForTest }: AutoSizingC
   });
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width * ratio}
-      height={height * ratio}
-      style={{ width, height }}
-    />
+    <div ref={resizeRef} style={{ height: "100%" }}>
+      <canvas
+        ref={canvasRef}
+        width={width * ratio}
+        height={height * ratio}
+        style={{ width, height }}
+      />
+    </div>
   );
 };
 

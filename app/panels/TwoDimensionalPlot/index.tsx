@@ -623,7 +623,7 @@ function TwoDimensionalPlot(props: Props) {
         <SRoot onDoubleClick={onResetZoom}>
           <ReactResizeDetector handleWidth handleHeight>
             {({ width, height }) => (
-              <>
+              <div style={{ height: "100%" }}>
                 <HoverBar mousePosition={mousePosition}>
                   <SBar ref={hoverBar} />
                 </HoverBar>
@@ -649,7 +649,7 @@ function TwoDimensionalPlot(props: Props) {
                     </Button>
                   </SResetZoom>
                 )}
-              </>
+              </div>
             )}
           </ReactResizeDetector>
           <DocumentEvents
