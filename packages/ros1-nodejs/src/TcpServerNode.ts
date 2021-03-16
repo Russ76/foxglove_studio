@@ -34,7 +34,7 @@ export class TcpServerNode extends EventEmitter implements TcpServer {
     this.#server.close();
   }
 
-  static TcpListen(options: {
+  static Listen(options: {
     host?: string;
     port?: number;
     backlog?: number;

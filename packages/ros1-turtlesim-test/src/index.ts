@@ -3,7 +3,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { RosNode } from "@foxglove/ros1";
-import { PlatformNode, TcpSocketNode, XmlRpcNode } from "@foxglove/ros1-nodejs";
+import {
+  PlatformNode,
+  TcpSocketNode,
+  XmlRpcClientNode,
+  XmlRpcServerNode,
+} from "@foxglove/ros1-nodejs";
 
 async function main() {
   const name = "/testclient";
@@ -11,12 +16,12 @@ async function main() {
 
   try {
     const url = await PlatformNode.GetDefaultRosMasterUri();
-    const xmlRpcClient = await XmlRpcNode.XmlRpcCreateClient({ url });
+    const xmlRpcClient = await XmlRpcClientNode.Create({ url });
     rosNode = new RosNode({
       name,
       xmlRpcClient,
-      xmlRpcCreateClient: XmlRpcNode.XmlRpcCreateClient,
-      xmlRpcCreateServer: XmlRpcNode.XmlRpcCreateServer,
+      xmlRpcCreateClient: XmlRpcClientNode.Create,
+      xmlRpcCreateServer: XmlRpcServerNode.Create,
       tcpConnect: TcpSocketNode.Connect,
       getPid: PlatformNode.GetPid,
       getHostname: PlatformNode.GetHostname,

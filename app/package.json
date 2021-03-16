@@ -6,6 +6,7 @@
     "storybook:build": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' build-storybook"
   },
   "dependencies": {
+    "@foxglove/ros1-electron": "workspace:packages/ros1-electron",
     "@mdi/svg": "5.9.55",
     "cbor-js": "0.1.0",
     "chart.js": "davidswinegar/Chart.js#0785c29a4c57b3e1b4243f8163df7950a00b2a80",

@@ -6,4 +6,5 @@
 export * as PlatformNode from "./PlatformNode";
 export { TcpServerNode } from "./TcpServerNode";
 export { TcpSocketNode } from "./TcpSocketNode";
-export * as XmlRpcNode from "./XmlRpcNode";
+export { XmlRpcClientNode } from "./XmlRpcClientNode";
+export { XmlRpcServerNode } from "./XmlRpcServerNode";
