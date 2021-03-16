@@ -11,7 +11,8 @@ export type RpcValue =
   | Uint8Array
   | RpcValue[]
   | { [key: string]: RpcValue }
-  | undefined;
+  | undefined
+  | void;
 
 export type RpcCallPayload = [method: string, waitHandle: number, args: RpcValue];
 
@@ -31,7 +32,7 @@ export type SocketInfo = {
   socketId: number;
   remoteAddress: TcpAddress;
   localAddress: TcpAddress;
-  fd: number;
+  fd?: number;
 };
 
 export interface RpcCall<Args extends RpcValue, Return extends RpcValue> {
@@ -41,21 +42,21 @@ export interface RpcCall<Args extends RpcValue, Return extends RpcValue> {
 
 // RPC methods callable from the renderer and handled by the main process
 export interface RpcRendererMethodMap {
-  GetPid: RpcCall<undefined, number>;
-  GetDefaultRosMasterUri: RpcCall<undefined, string>;
-  GetHostname: RpcCall<undefined, string>;
+  GetPid: RpcCall<void, number>;
+  GetDefaultRosMasterUri: RpcCall<void, string>;
+  GetHostname: RpcCall<void, string>;
 
   TcpSocket_Create: RpcCall<{ host: string; port: number }, SocketInfo>;
-  TcpSocket_close: RpcCall<number, undefined>;
-  TcpSocket_write: RpcCall<[socketId: number, data: Uint8Array], undefined>;
+  TcpSocket_close: RpcCall<number, void>;
+  TcpSocket_write: RpcCall<[socketId: number, data: Uint8Array], void>;
 
   TcpServer_Create: RpcCall<
     { host?: string; port?: number; backlog?: number },
     { serverId: number; address: TcpAddress }
   >;
-  TcpServer_close: RpcCall<number, undefined>;
+  TcpServer_close: RpcCall<number, void>;
 
-  XmlRpcClient_Create: RpcCall<{ url?: string }, { clientId: number; serverUrl: string }>;
+  XmlRpcClient_Create: RpcCall<{ url: string }, { clientId: number }>;
   XmlRpcClient_methodCall: RpcCall<
     { clientId: number; method: string; args: XmlRpcValue[] },
     XmlRpcResponse
@@ -65,8 +66,8 @@ export interface RpcRendererMethodMap {
     { hostname: string; port?: number },
     { serverId: number; address: HttpAddress }
   >;
-  XmlRpcServer_close: RpcCall<number, undefined>;
-  XmlRpcServer_addMethod: RpcCall<{ serverId: number; method: string }, undefined>;
+  XmlRpcServer_close: RpcCall<number, void>;
+  XmlRpcServer_addMethod: RpcCall<{ serverId: number; method: string }, void>;
 }
 
 // RPC methods callable from the main process and received by the renderer

@@ -10,6 +10,7 @@ import {
   RpcCallPayload,
   RpcEventPayload,
   RpcHandler,
+  RpcMainEventMap,
   RpcMainMethodMap,
   RpcRendererMethodMap,
   RpcResponsePayload,
@@ -118,5 +119,14 @@ export class RpcMain {
 
     browser.webContents.postMessage(channel, undefined, [a.port1, b.port1, events.port1]);
     return new RpcMain(b.port2, a.port2, events.port2);
+  }
+
+  emit<K extends keyof RpcMainEventMap, V extends RpcMainEventMap[K]>(
+    eventName: K,
+    id: number,
+    data: V,
+  ): void {
+    const msg: RpcEventPayload = [eventName, id, data];
+    this.#eventPort.postMessage(msg);
   }
 }
