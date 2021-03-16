@@ -22,9 +22,6 @@ import { Time } from "rosbag";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 
-import PlaybackBarHoverTicks from "./PlaybackBarHoverTicks";
-import { ProgressPlot } from "./ProgressPlot";
-import styles from "./index.module.scss";
 import { clearHoverValue, setHoverValue } from "@foxglove-studio/app/actions/hoverValue";
 import Button from "@foxglove-studio/app/components/Button";
 import Flex from "@foxglove-studio/app/components/Flex";
@@ -50,6 +47,10 @@ import colors from "@foxglove-studio/app/styles/colors.module.scss";
 import { formatTime } from "@foxglove-studio/app/util/formatTime";
 import { colors as sharedColors } from "@foxglove-studio/app/util/sharedStyleConstants";
 import { subtractTimes, toSec, fromSec, formatTimeRaw } from "@foxglove-studio/app/util/time";
+
+import PlaybackBarHoverTicks from "./PlaybackBarHoverTicks";
+import { ProgressPlot } from "./ProgressPlot";
+import styles from "./index.module.scss";
 
 const cx = classnames.bind(styles);
 
@@ -90,8 +91,8 @@ export const TooltipItem = ({ title, value }: { title: string; value: any }) => 
 
 export const UnconnectedPlaybackControls = memo<PlaybackControlProps>(
   (props: PlaybackControlProps) => {
-    const el = useRef<HTMLDivElement | null>(null);
-    const slider = useRef<Slider | null>(null);
+    const el = useRef<HTMLDivElement>(ReactNull);
+    const slider = useRef<Slider>(ReactNull);
     const { seek, pause, play, player } = props;
 
     // playerState is unstable, and will cause callbacks to change identity every frame. They can take
@@ -229,7 +230,7 @@ export const UnconnectedPlaybackControls = memo<PlaybackControlProps>(
               value={value}
               draggable
               onChange={onChange}
-              renderSlider={(val) => (val == undefined ? null : <StyledMarker width={val} />)}
+              renderSlider={(val) => (val == undefined ? undefined : <StyledMarker width={val} />)}
             />
           </div>
           <PlaybackBarHoverTicks componentId={hoverComponentId} />

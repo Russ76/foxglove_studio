@@ -22,6 +22,12 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSpring, animated } from "react-spring";
 import styled from "styled-components";
 
+import Dimensions from "@foxglove-studio/app/components/Dimensions";
+import Icon from "@foxglove-studio/app/components/Icon";
+import useLinkedGlobalVariables from "@foxglove-studio/app/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
+import { useChangeDetector } from "@foxglove-studio/app/util/hooks";
+import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
 import { Save3DConfig } from "../index";
 import DiffModeSettings from "./DiffModeSettings";
 import TopicTreeSwitcher, { SWITCHER_HEIGHT } from "./TopicTreeSwitcher";
@@ -43,11 +49,6 @@ import {
   TreeNode,
   VisibleTopicsCountByKey,
 } from "./types";
-import Dimensions from "@foxglove-studio/app/components/Dimensions";
-import Icon from "@foxglove-studio/app/components/Icon";
-import useLinkedGlobalVariables from "@foxglove-studio/app/panels/ThreeDimensionalViz/Interactions/useLinkedGlobalVariables";
-import { useChangeDetector } from "@foxglove-studio/app/util/hooks";
-import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
 
 const CONTAINER_SPACING = 15;
 const DEFAULT_WIDTH = 360;
@@ -262,10 +263,10 @@ function TopicTree({
   visibleTopicsCountByKey,
 }: BaseProps) {
   const renderTopicTree = pinTopics || showTopicTree;
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(ReactNull);
   const checkedKeysSet = useMemo(() => new Set(checkedKeys), [checkedKeys]);
 
-  const filterTextFieldRef = useRef<HTMLInputElement | null>(null);
+  const filterTextFieldRef = useRef<HTMLInputElement>(ReactNull);
 
   // HACK: rc-tree does not auto expand dynamic tree nodes. Create a copy of expandedNodes
   // to ensure newly added nodes such as `uncategorized` are properly expanded:
@@ -392,6 +393,7 @@ function TopicTree({
             itemHeight={ROW_HEIGHT}
             // Disable motion because it seems to cause a bug in the `rc-tree` (used under the hood by `antd` for
             // the tree). This bug would result in nodes no longer being rendered after a search.
+            // eslint-disable-next-line no-restricted-syntax
             motion={null}
             selectable={false}
             onExpand={(newExpandedKeys) => {

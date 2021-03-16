@@ -14,12 +14,18 @@
 import { isEqual } from "lodash";
 import styled from "styled-components";
 
+import Button from "@foxglove-studio/app/components/Button";
+import GlobalVariableName from "@foxglove-studio/app/panels/ThreeDimensionalViz/Interactions/GlobalVariableName";
+import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
 import { getPath, memoizedGetLinkedGlobalVariablesKeyByName } from "../interactionUtils";
 import useLinkedGlobalVariables, { LinkedGlobalVariable } from "../useLinkedGlobalVariables";
+import SGlobalVariableLink from "./SGlobalVariableLink";
 import UnlinkWrapper from "./UnlinkWrapper";
-import { SGlobalVariableLink, SPath, GlobalVariableName } from "./index";
-import Button from "@foxglove-studio/app/components/Button";
-import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
+const SPath = styled.span`
+  opacity: 0.8;
+`;
 
 const SForm = styled.form`
   background-color: ${colors.DARK3};
@@ -69,7 +75,7 @@ export default function UnlinkGlobalVariables({ name, showList }: Props) {
   const links: LinkedGlobalVariable[] = linkedGlobalVariablesKeyByName[name] || [];
 
   if (links.length === 0) {
-    return null;
+    return ReactNull;
   }
 
   const listStyle = showList ? { marginLeft: 0, marginRight: 0 } : {};

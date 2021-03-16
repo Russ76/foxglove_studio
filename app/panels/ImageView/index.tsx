@@ -20,17 +20,6 @@ import cx from "classnames";
 import { last, uniq } from "lodash";
 import styled from "styled-components";
 
-import ImageCanvas from "./ImageCanvas";
-import imageCanvasStyles from "./ImageCanvas.module.scss";
-import helpContent from "./index.help.md";
-import style from "./index.module.scss";
-import {
-  getCameraInfoTopic,
-  getCameraNamespace,
-  getRelatedMarkerTopics,
-  getMarkerOptions,
-  groupTopics,
-} from "./util";
 import * as PanelAPI from "@foxglove-studio/app/PanelAPI";
 import Autocomplete from "@foxglove-studio/app/components/Autocomplete";
 import Dropdown from "@foxglove-studio/app/components/Dropdown";
@@ -58,6 +47,18 @@ import { colors as sharedColors } from "@foxglove-studio/app/util/sharedStyleCon
 import { getSynchronizingReducers } from "@foxglove-studio/app/util/synchronizeMessages";
 import { formatTimeRaw } from "@foxglove-studio/app/util/time";
 import toggle from "@foxglove-studio/app/util/toggle";
+
+import ImageCanvas from "./ImageCanvas";
+import imageCanvasStyles from "./ImageCanvas.module.scss";
+import helpContent from "./index.help.md";
+import style from "./index.module.scss";
+import {
+  getCameraInfoTopic,
+  getCameraNamespace,
+  getRelatedMarkerTopics,
+  getMarkerOptions,
+  groupTopics,
+} from "./util";
 
 const { useMemo, useCallback } = React;
 
@@ -116,7 +117,7 @@ const TopicTimestamp = ({
   style?: {
     [key: string]: string;
   };
-}) => (text === "" ? null : <TopicTimestampSpan style={styleObj}>{text}</TopicTimestampSpan>);
+}) => (text === "" ? ReactNull : <TopicTimestampSpan style={styleObj}>{text}</TopicTimestampSpan>);
 
 const BottomBar = ({ children }: { children?: React.ReactNode }) => (
   <div
@@ -365,7 +366,7 @@ function ImageView(props: Props) {
     const items = [...imageTopicsByNamespace.keys()].sort().map((group) => {
       const imageTopics = imageTopicsByNamespace.get(group);
       if (!imageTopics) {
-        return null;
+        return ReactNull;
       } // satisfy flow
       imageTopics.sort(naturalSort("name"));
 

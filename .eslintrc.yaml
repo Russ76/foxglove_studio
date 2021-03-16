@@ -24,7 +24,6 @@ extends:
   - plugin:import/errors
   - plugin:import/warnings
   - plugin:import/typescript
-  - plugin:prettier/recommended
 
 parser: "@typescript-eslint/parser"
 parserOptions:
@@ -38,7 +37,7 @@ parserOptions:
 settings:
   react:
     version: detect
-  import/internal-regex: "^@foxglove-studio/"
+  import/internal-regex: "^@foxglove"
 
 rules:
   file-progress/activate: 1
@@ -56,7 +55,7 @@ rules:
   "@typescript-eslint/prefer-nullish-coalescing": warn
   react/jsx-uses-react: off
   react/react-in-jsx-scope: off
-  react/prop-types: warn
+  react/prop-types: off # Unnecessary with typescript validation
   react/no-unused-prop-types: warn
   react-hooks/rules-of-hooks: error
   react-hooks/exhaustive-deps: error
@@ -81,18 +80,15 @@ rules:
       location: anywhere
   # Some good ones that people really should be adding to import/recommended:
   import/first: error
-  import/no-self-import: error
   import/no-useless-path-segments: error
   import/no-mutable-exports: error
   import/newline-after-import: error
-  import/no-duplicates: error # https://github.com/benmosher/eslint-plugin-import/issues/242#issuecomment-230118951
-  # Group imports into two groups: packages and files. Sort alphabetically
-  # within those groups.
+  # Group imports into three groups [external, @foxglove, relative] and sort alphabetically within each group
   import/order:
     - error
     - alphabetize: { order: asc }
       newlines-between: always
-      groups: [[builtin, external], [internal, parent, sibling, index]]
+      groups: [[builtin, external], [internal], [parent, sibling, index]]
 
   # we let typescript and webpack handle whether imports exist or not
   import/namespace: off
@@ -131,6 +127,13 @@ rules:
     # Ban `==` and `!=` unless RHS is undefined
     - selector: "BinaryExpression:matches([operator='=='], [operator='!=']):not([right.type=Identifier][right.name=undefined]):not([right.type=Literal][right.raw=null])"
       message: 'Use strict equality operators "===" and "!==", except when checking for null or undefined.'
+
+    - selector: "TSNullKeyword, Literal[raw=null]"
+      message: >
+        Prefer undefined instead of null. When required for React refs/components, use
+        the `ReactNull` alias. Otherwise, if strictly necessary, disable this error with
+        `// eslint-disable-next-line no-restricted-syntax`. For rationale, see:
+        https://github.com/sindresorhus/meta/discussions/7"
 
   "@typescript-eslint/strict-boolean-expressions":
     - error

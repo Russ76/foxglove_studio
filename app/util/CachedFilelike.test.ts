@@ -13,8 +13,9 @@
 
 import buffer from "buffer";
 
-import CachedFilelike, { FileReader, FileStream } from "./CachedFilelike";
 import delay from "@foxglove-studio/app/shared/delay";
+
+import CachedFilelike, { FileReader, FileStream } from "./CachedFilelike";
 
 class InMemoryFileReader implements FileReader {
   _buffer: Buffer;
@@ -153,6 +154,7 @@ describe("CachedFilelike", () => {
       });
 
       const readerPromise = new Promise<Buffer>((resolve, reject) => {
+        // eslint-disable-next-line no-restricted-syntax
         cachedFileReader.read(1, 2, (error: any, data?: Buffer | null) => {
           if (data) {
             resolve(data);
@@ -184,6 +186,7 @@ describe("CachedFilelike", () => {
           // no-op
         },
       });
+      // eslint-disable-next-line no-restricted-syntax
       cachedFileReader.read(1, 0, (error: any, data?: Buffer | null) => {
         if (!data) {
           throw new Error("Missing `data`");

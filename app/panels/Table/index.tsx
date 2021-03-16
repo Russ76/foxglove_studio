@@ -17,7 +17,6 @@ import _ from "lodash";
 import { useTable, usePagination, useExpanded, useSortBy } from "react-table";
 import styled from "styled-components";
 
-import helpContent from "./index.help.md";
 import { useMessagesByTopic } from "@foxglove-studio/app/PanelAPI";
 import EmptyState from "@foxglove-studio/app/components/EmptyState";
 import Flex from "@foxglove-studio/app/components/Flex";
@@ -38,6 +37,8 @@ import { RosObject } from "@foxglove-studio/app/players/types";
 import { SaveConfig } from "@foxglove-studio/app/types/panels";
 import { ROBOTO_MONO } from "@foxglove-studio/app/util/sharedStyleConstants";
 import { toolsColorScheme } from "@foxglove-studio/app/util/toolsColorScheme";
+
+import helpContent from "./index.help.md";
 
 const STable = styled.table`
   border: none;
@@ -101,6 +102,7 @@ function getColumnsFromObject(obj: RosObject, accessorPath: string): ColumnOptio
             return JSON.stringify(value);
           }
 
+          // eslint-disable-next-line no-restricted-syntax
           if (typeof value === "object" && value !== null) {
             return <TableCell value={value} row={row} accessorPath={id} />;
           }
@@ -129,8 +131,10 @@ const Table = ({ value, accessorPath }: { value: unknown; accessorPath: string }
   const isNested = !!accessorPath;
   const columns = React.useMemo(() => {
     if (
+      // eslint-disable-next-line no-restricted-syntax
       value === null ||
       typeof value !== "object" ||
+      // eslint-disable-next-line no-restricted-syntax
       (Array.isArray(value) && typeof value[0] !== "object" && value[0] !== null)
     ) {
       return [];
@@ -157,6 +161,7 @@ const Table = ({ value, accessorPath }: { value: unknown; accessorPath: string }
 
   if (
     typeof value !== "object" ||
+    // eslint-disable-next-line no-restricted-syntax
     value === null ||
     (!isNested && Array.isArray(value) && typeof value[0] !== "object")
   ) {

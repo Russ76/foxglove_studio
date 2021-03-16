@@ -15,11 +15,12 @@ import ChevronDownIcon from "@mdi/svg/svg/chevron-down.svg";
 import cx from "classnames";
 import { ReactNode, CSSProperties, ReactElement } from "react";
 
+import Tooltip from "@foxglove-studio/app/components/Tooltip";
+
 import ChildToggle from "../ChildToggle";
 import Icon from "../Icon";
 import Menu, { Item } from "../Menu";
 import styles from "./index.module.scss";
-import Tooltip from "@foxglove-studio/app/components/Tooltip";
 
 type Props = {
   children?: ReactNode;
@@ -86,8 +87,8 @@ export default class Dropdown extends React.Component<Props, State> {
   renderChildren() {
     const { children } = this.props;
     return React.Children.map(children, (child, i) => {
-      if (child === null) {
-        return null;
+      if (child == undefined) {
+        return ReactNull;
       }
       const inner = (child as any).props.value != undefined ? this.renderItem(child as any) : child;
       return <span key={i}>{inner}</span>;

@@ -13,23 +13,26 @@
 
 import { useCallback, useContext, useMemo } from "react";
 
-import NamespaceMenu from "./NamespaceMenu";
-import NodeName from "./NodeName";
-import { SToggles, STreeNodeRow, SLeft, SRightActions, ICON_SIZE } from "./TreeNodeRow";
-import VisibilityToggle, { TOGGLE_WRAPPER_SIZE } from "./VisibilityToggle";
-import { TooltipRow, TooltipTable, TreeUINode } from "./renderTreeNodes";
-import {
-  GetIsTreeNodeVisibleInTree,
-  OnNamespaceOverrideColorChange,
-  SetEditingNamespace,
-  TreeTopicNode,
-} from "./types";
 import { ThreeDimensionalVizContext } from "@foxglove-studio/app/panels/ThreeDimensionalViz/ThreeDimensionalVizContext";
 import { TREE_SPACING } from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/constants";
 import { TopicTreeContext } from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/useTopicTree";
 import { SECOND_SOURCE_PREFIX, TRANSFORM_TOPIC } from "@foxglove-studio/app/util/globalConstants";
 import { useGuaranteedContext } from "@foxglove-studio/app/util/hooks";
 import { joinTopics } from "@foxglove-studio/app/util/topicUtils";
+
+import NamespaceMenu from "./NamespaceMenu";
+import NodeName from "./NodeName";
+import TooltipRow from "./TooltipRow";
+import TooltipTable from "./TooltipTable";
+import { SToggles, STreeNodeRow, SLeft, SRightActions, ICON_SIZE } from "./TreeNodeRow";
+import VisibilityToggle, { TOGGLE_WRAPPER_SIZE } from "./VisibilityToggle";
+import {
+  GetIsTreeNodeVisibleInTree,
+  OnNamespaceOverrideColorChange,
+  SetEditingNamespace,
+  TreeTopicNode,
+  TreeUINode,
+} from "./types";
 
 const OUTER_LEFT_MARGIN = 12;
 const INNER_LEFT_MARGIN = 8;
@@ -102,7 +105,7 @@ function NamespaceNodeRow({
   const nodeVisibleInScene = !!(visibleInSceneByColumn[0] || visibleInSceneByColumn[1]);
 
   const { setHoveredMarkerMatchers } = useContext(ThreeDimensionalVizContext);
-  const { toggleCheckAllAncestors, toggleNamespaceChecked }: any = useGuaranteedContext(
+  const { toggleCheckAllAncestors, toggleNamespaceChecked } = useGuaranteedContext(
     TopicTreeContext,
     "TopicTreeContext",
   );

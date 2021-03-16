@@ -13,8 +13,9 @@
 
 import cx from "classnames";
 
-import styles from "./icon.module.scss";
 import Tooltip from "@foxglove-studio/app/components/Tooltip";
+
+import styles from "./icon.module.scss";
 
 type Props = {
   children: React.ReactNode;
@@ -80,7 +81,7 @@ const Icon = (props: Props) => {
   };
 
   return (
-    <Tooltip contents={tooltip || null} {...tooltipProps}>
+    <Tooltip contents={tooltip} {...tooltipProps}>
       <span className={classNames} onClick={clickHandler} style={style} data-test={dataTest}>
         {children}
       </span>

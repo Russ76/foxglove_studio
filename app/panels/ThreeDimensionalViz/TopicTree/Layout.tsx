@@ -33,7 +33,6 @@ import {
 import { Time } from "rosbag";
 import { useDebouncedCallback } from "use-debounce";
 
-import useTopicTree, { TopicTreeContext } from "./useTopicTree";
 import useDataSourceInfo from "@foxglove-studio/app/PanelAPI/useDataSourceInfo";
 import Dimensions from "@foxglove-studio/app/components/Dimensions";
 import KeyListener from "@foxglove-studio/app/components/KeyListener";
@@ -43,10 +42,7 @@ import { RenderToBodyComponent } from "@foxglove-studio/app/components/RenderToB
 import { useExperimentalFeature } from "@foxglove-studio/app/context/ExperimentalFeaturesContext";
 import useGlobalVariables from "@foxglove-studio/app/hooks/useGlobalVariables";
 import { getGlobalHooks } from "@foxglove-studio/app/loadWebviz";
-import {
-  Save3DConfig,
-  ThreeDimensionalVizConfig,
-} from "@foxglove-studio/app/panels/ThreeDimensionalViz";
+import { Save3DConfig } from "@foxglove-studio/app/panels/ThreeDimensionalViz";
 import DebugStats from "@foxglove-studio/app/panels/ThreeDimensionalViz/DebugStats";
 import {
   POLYGON_TAB_TYPE,
@@ -83,6 +79,7 @@ import {
   getObject,
   getUpdatedGlobalVariablesBySelectedObject,
 } from "@foxglove-studio/app/panels/ThreeDimensionalViz/threeDimensionalVizUtils";
+import { ThreeDimensionalVizConfig } from "@foxglove-studio/app/panels/ThreeDimensionalViz/types";
 import { Frame, Topic } from "@foxglove-studio/app/players/types";
 import inScreenshotTests from "@foxglove-studio/app/stories/inScreenshotTests";
 import { Color } from "@foxglove-studio/app/types/Messages";
@@ -93,6 +90,8 @@ import { useShallowMemo } from "@foxglove-studio/app/util/hooks";
 import { inVideoRecordingMode } from "@foxglove-studio/app/util/inAutomatedRunMode";
 import { getTopicsByTopicName } from "@foxglove-studio/app/util/selectors";
 import { joinTopics } from "@foxglove-studio/app/util/topicUtils";
+
+import useTopicTree, { TopicTreeContext } from "./useTopicTree";
 
 const { sceneBuilderHooks } = (getGlobalHooks() as any).perPanelHooks().ThreeDimensionalViz;
 
@@ -187,7 +186,7 @@ export default function Layout({
   },
 }: Props) {
   const [filterText, setFilterText] = useState(""); // Topic tree text for filtering to see certain topics.
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(ReactNull);
   const { linkedGlobalVariables } = useLinkedGlobalVariables();
   const { globalVariables, setGlobalVariables } = useGlobalVariables();
   const [debug, setDebug] = useState(false);
@@ -216,7 +215,7 @@ export default function Layout({
   } = searchTextProps;
   // used for updating DrawPolygon during mouse move and scenebuilder namespace change.
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
-  const measuringElRef = useRef<MeasuringTool>(null);
+  const measuringElRef = useRef<MeasuringTool>(ReactNull);
   const [drawingTabType, setDrawingTabType] = useState<DrawingTabType | undefined>(undefined);
   const [interactionsTabType, setInteractionsTabType] = useState<DrawingTabType | undefined>(
     undefined,
@@ -627,7 +626,7 @@ export default function Layout({
   }, [handleEvent, selectObject]);
 
   // When the TopicTree is hidden, focus the <World> again so keyboard controls continue to work
-  const worldRef = useRef<typeof Worldview | undefined>(null);
+  const worldRef = useRef<typeof Worldview | undefined>(ReactNull);
   useEffect(() => {
     if (!showTopicTree && worldRef.current) {
       worldRef.current.focus();

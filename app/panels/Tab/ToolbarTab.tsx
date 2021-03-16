@@ -18,11 +18,12 @@ import React, { Ref as ReactRef, useCallback, useEffect, useMemo, useRef, useSta
 import styled from "styled-components";
 import textWidth from "text-width";
 
-import styles from "./Tab.module.scss";
 import Icon from "@foxglove-studio/app/components/Icon";
 import Tooltip from "@foxglove-studio/app/components/Tooltip";
 import { TabActions } from "@foxglove-studio/app/panels/Tab/TabDndContext";
 import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
+import styles from "./Tab.module.scss";
 
 const FONT_SIZE = 12;
 const FONT_FAMILY = "'Inter UI', -apple-system, BlinkMacSystemFont, sans-serif";
@@ -85,7 +86,7 @@ export function ToolbarTab(props: Props) {
     hidden,
   } = props;
 
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(ReactNull);
   const [title, setTitle] = useState<string>(tabTitle || "");
   const [editingTitle, setEditingTitle] = useState<boolean>(false);
   const onChangeTitleInput = useCallback((ev) => setTitle(ev.target.value), []);

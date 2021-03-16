@@ -15,6 +15,12 @@ import { mount } from "enzyme";
 import { last } from "lodash";
 import { act } from "react-dom/test-utils";
 
+import { PlayerStateActiveData } from "@foxglove-studio/app/players/types";
+import delay from "@foxglove-studio/app/shared/delay";
+import signal from "@foxglove-studio/app/shared/signal";
+import tick from "@foxglove-studio/app/shared/tick";
+import { initializeLogEvent, resetLogEventForTests } from "@foxglove-studio/app/util/logEvent";
+
 import {
   MessagePipelineProvider,
   MessagePipelineConsumer,
@@ -22,17 +28,12 @@ import {
 } from ".";
 import FakePlayer from "./FakePlayer";
 import { MAX_PROMISE_TIMEOUT_TIME_MS } from "./pauseFrameForPromise";
-import { PlayerStateActiveData } from "@foxglove-studio/app/players/types";
-import delay from "@foxglove-studio/app/shared/delay";
-import signal from "@foxglove-studio/app/shared/signal";
-import tick from "@foxglove-studio/app/shared/tick";
-import { initializeLogEvent, resetLogEventForTests } from "@foxglove-studio/app/util/logEvent";
 
 jest.setTimeout(MAX_PROMISE_TIMEOUT_TIME_MS * 3);
 
 describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
   it("returns empty data when no player is given", () => {
-    const callback = jest.fn().mockReturnValue(null);
+    const callback = jest.fn().mockReturnValue(ReactNull);
     mount(
       <MessagePipelineProvider>
         <MessagePipelineConsumer>{callback}</MessagePipelineConsumer>
@@ -71,7 +72,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
 
   it("updates when the player emits a new state", async () => {
     const player = new FakePlayer();
-    const callback = jest.fn().mockReturnValue(null);
+    const callback = jest.fn().mockReturnValue(ReactNull);
     mount(
       <MessagePipelineProvider player={player}>
         <MessagePipelineConsumer>{callback}</MessagePipelineConsumer>
@@ -112,7 +113,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
 
   it("throws an error when the player emits before the previous emit has been resolved", () => {
     const player = new FakePlayer();
-    const callback = jest.fn().mockReturnValue(null);
+    const callback = jest.fn().mockReturnValue(ReactNull);
     mount(
       <MessagePipelineProvider player={player}>
         <MessagePipelineConsumer>{callback}</MessagePipelineConsumer>
@@ -138,7 +139,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
           {(context) => {
             pauseFrame = context.pauseFrame;
             promise.resolve();
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -211,7 +212,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
               expect(context.subscriptions).toBe(lastSubscriptions);
               done();
             }
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -260,7 +261,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
               expect(context.publishers).toBe(lastPublishers);
               done();
             }
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -279,7 +280,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
             callCount++;
             if (callCount > 3) {
               done();
-              return null;
+              return ReactNull;
             }
             // cause the player to emit a frame outside the render loop to trigger another render
             setImmediate(() => {
@@ -291,7 +292,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
             });
             // we don't have a last context yet
             if (callCount === 1) {
-              return null;
+              return ReactNull;
             }
             lastContext = context;
             for (const key in context) {
@@ -300,7 +301,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
                 expect(lastContext[key]).toBe(context[key]);
               }
             }
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -309,7 +310,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
 
   it("resolves listener promise after each render", async () => {
     const player = new FakePlayer();
-    const callback = jest.fn().mockReturnValue(null);
+    const callback = jest.fn().mockReturnValue(ReactNull);
     mount(
       <MessagePipelineProvider player={player}>
         <MessagePipelineConsumer>{callback}</MessagePipelineConsumer>
@@ -351,7 +352,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
               expect(player.setPlaybackSpeed).toHaveBeenCalledWith(0.5);
               expect(player.seekPlayback).toHaveBeenCalledWith({ sec: 1, nsec: 0 });
             }
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -363,7 +364,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
     jest.spyOn(player, "close");
     const el = mount(
       <MessagePipelineProvider player={player}>
-        <MessagePipelineConsumer>{() => null}</MessagePipelineConsumer>
+        <MessagePipelineConsumer>{() => ReactNull}</MessagePipelineConsumer>
       </MessagePipelineProvider>,
     );
 
@@ -381,7 +382,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
       player = new FakePlayer();
       player.playerId = "fake player 1";
       jest.spyOn(player, "close");
-      fn = jest.fn().mockReturnValue(null);
+      fn = jest.fn().mockReturnValue(ReactNull);
       const el = mount(
         <MessagePipelineProvider player={player}>
           <MessagePipelineConsumer>{fn}</MessagePipelineConsumer>
@@ -436,7 +437,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
             context.setPlaybackSpeed(1);
             context.seekPlayback({ sec: 1, nsec: 0 });
             context.publish({ topic: "/foo", msg: {} });
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -472,7 +473,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
                 wait.resolve();
               });
             }
-            return null;
+            return ReactNull;
           }}
         </MessagePipelineConsumer>
       </MessagePipelineProvider>,
@@ -489,7 +490,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
 
   it("keeps activeData when closing a player", async () => {
     const player = new FakePlayer();
-    const fn = jest.fn().mockReturnValue(null);
+    const fn = jest.fn().mockReturnValue(ReactNull);
     const el = mount(
       <MessagePipelineProvider player={player}>
         <MessagePipelineConsumer>{fn}</MessagePipelineConsumer>
@@ -530,7 +531,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
   it("logs a warning if a panel subscribes just after activeData becomes available", async () => {
     jest.spyOn(console, "warn").mockReturnValue();
     const player = new FakePlayer();
-    const fn = jest.fn().mockReturnValue(null);
+    const fn = jest.fn().mockReturnValue(ReactNull);
     mount(
       <MessagePipelineProvider player={player}>
         <MessagePipelineConsumer>{fn}</MessagePipelineConsumer>
@@ -604,7 +605,7 @@ describe("MessagePipelineProvider/MessagePipelineConsumer", () => {
           <MessagePipelineConsumer>
             {(context) => {
               pauseFrame = context.pauseFrame;
-              return null;
+              return ReactNull;
             }}
           </MessagePipelineConsumer>
         </MessagePipelineProvider>,

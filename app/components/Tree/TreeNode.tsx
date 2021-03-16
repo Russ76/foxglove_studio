@@ -25,11 +25,12 @@ import LeadPencilIcon from "@mdi/svg/svg/lead-pencil.svg";
 import cx from "classnames";
 import React, { Component } from "react";
 
-import { Node } from "./Node";
-import styles from "./index.module.scss";
 import Icon from "@foxglove-studio/app/components/Icon";
 import Tooltip from "@foxglove-studio/app/components/Tooltip";
 import colors from "@foxglove-studio/app/styles/colors.module.scss";
+
+import { Node } from "./Node";
+import styles from "./index.module.scss";
 
 type Props = {
   node: Node;
@@ -89,7 +90,7 @@ export default class TreeNode extends Component<Props> {
       onToggleVisibility,
     } = this.props;
     if (!node.expanded || !node.children) {
-      return null;
+      return ReactNull;
     }
     return node.children.map((child) => {
       return (
@@ -210,7 +211,7 @@ export default class TreeNode extends Component<Props> {
 
     // Wrap in a fragment to avoid missing key warnings
     const tooltipContents =
-      !tooltip || tooltip.length === 0 ? null : React.createElement(React.Fragment, {}, ...tooltip);
+      tooltip && tooltip.length > 0 && React.createElement(React.Fragment, {}, ...tooltip);
 
     return (
       <div style={filtered ? { display: "none" } : {}}>

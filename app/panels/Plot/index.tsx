@@ -16,8 +16,6 @@ import memoizeWeak from "memoize-weak";
 import { useEffect, useCallback, useMemo, useRef } from "react";
 import { Time, TimeUtil } from "rosbag";
 
-import helpContent from "./index.help.md";
-import { PlotConfig } from "./types";
 import {
   useBlocksByTopic,
   useDataSourceInfo,
@@ -45,6 +43,9 @@ import PlotMenu from "@foxglove-studio/app/panels/Plot/PlotMenu";
 import { PanelConfig } from "@foxglove-studio/app/types/panels";
 import { useShallowMemo } from "@foxglove-studio/app/util/hooks";
 import { fromSec, subtractTimes, toSec } from "@foxglove-studio/app/util/time";
+
+import helpContent from "./index.help.md";
+import { PlotConfig } from "./types";
 
 export { plotableRosTypes } from "./types";
 export type { PlotConfig, PlotXAxisVal } from "./types";
@@ -128,9 +129,9 @@ function Plot(props: Props) {
     xAxisPath,
   } = config;
   // Note that the below values are refs since they are only used in callbacks and are not rendered anywhere.
-  const currentMinY = useRef<number | null>(null);
-  const currentMaxY = useRef<number | null>(null);
-  const currentViewWidth = useRef<number | null>(null);
+  const currentMinY = useRef<number>(ReactNull);
+  const currentMaxY = useRef<number>(ReactNull);
+  const currentViewWidth = useRef<number>(ReactNull);
 
   const saveCurrentView = useCallback((minY: number, maxY: number, width: number) => {
     currentMinY.current = minY;

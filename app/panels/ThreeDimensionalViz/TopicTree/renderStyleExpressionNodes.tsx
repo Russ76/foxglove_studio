@@ -17,9 +17,6 @@ import { groupBy, defaults } from "lodash";
 import { useCallback, useContext, useMemo, useState } from "react";
 import styled from "styled-components";
 
-import { SLeft, SRightActions, SToggles, STreeNodeRow } from "./TreeNodeRow";
-import VisibilityToggle from "./VisibilityToggle";
-import { TREE_SPACING, ROW_HEIGHT } from "./constants";
 import ChildToggle from "@foxglove-studio/app/components/ChildToggle";
 import Icon from "@foxglove-studio/app/components/Icon";
 import Menu, { Item } from "@foxglove-studio/app/components/Menu";
@@ -35,15 +32,17 @@ import {
   getHexFromColorSettingWithDefault,
 } from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicSettingsEditor/ColorPickerForTopicSettings";
 import { ColorOverride } from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/Layout";
-import {
-  TreeUINode,
-  TooltipRow,
-  TooltipTable,
-} from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/renderTreeNodes";
+import TooltipRow from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/TooltipRow";
+import TooltipTable from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/TooltipTable";
+import { TreeUINode } from "@foxglove-studio/app/panels/ThreeDimensionalViz/TopicTree/types";
 import { Color } from "@foxglove-studio/app/types/Messages";
 import filterMap from "@foxglove-studio/app/util/filterMap";
 import { SECOND_SOURCE_PREFIX } from "@foxglove-studio/app/util/globalConstants";
 import { joinTopics } from "@foxglove-studio/app/util/topicUtils";
+
+import { SLeft, SRightActions, SToggles, STreeNodeRow } from "./TreeNodeRow";
+import VisibilityToggle from "./VisibilityToggle";
+import { TREE_SPACING, ROW_HEIGHT } from "./constants";
 
 // TODO: Dedupe from renderNamespaceNodes
 const OUTER_LEFT_MARGIN = 12;
@@ -199,7 +198,7 @@ function StyleExpressionNode(props: any) {
           <SToggles>
             {filterMap(colorOverridesByColumnIdx, (override, sourceIdx) => {
               if (!hasFeatureColumn && sourceIdx === 1) {
-                return null;
+                return ReactNull;
               }
               const { active, color } = override ?? { active: false };
               return (

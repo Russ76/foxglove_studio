@@ -15,12 +15,13 @@ import cx from "classnames";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMountedState } from "react-use";
 
-import styles from "./ShareJsonModal.module.scss";
 import Button from "@foxglove-studio/app/components/Button";
 import Flex from "@foxglove-studio/app/components/Flex";
 import Modal from "@foxglove-studio/app/components/Modal";
 import { downloadTextFile } from "@foxglove-studio/app/util";
 import clipboard from "@foxglove-studio/app/util/clipboard";
+
+import styles from "./ShareJsonModal.module.scss";
 
 type Props = {
   onRequestClose: () => void;
@@ -37,7 +38,7 @@ function decode(value: string) {
   }
 }
 
-function selectText(element?: HTMLTextAreaElement | null): void {
+function selectText(element?: HTMLTextAreaElement | ReactNull): void {
   if (element) {
     element.focus();
     element.select();
@@ -106,7 +107,7 @@ export default function ShareJsonModal(props: Props) {
 
   const renderError = useMemo(() => {
     if (!error) {
-      return null;
+      return ReactNull;
     }
     return <div className="notification is-danger">The input you provided is invalid.</div>;
   }, [error]);

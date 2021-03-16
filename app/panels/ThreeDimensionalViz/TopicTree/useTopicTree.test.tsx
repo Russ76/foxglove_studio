@@ -13,9 +13,10 @@
 
 import { mount } from "enzyme";
 
+import { Topic } from "@foxglove-studio/app/players/types";
+
 import { UseTreeInput } from "./types";
 import useTopicTree, { generateNodeKey, getBaseKey } from "./useTopicTree";
-import { Topic } from "@foxglove-studio/app/players/types";
 
 const TREE_CONFIG = {
   name: "root",
@@ -57,7 +58,7 @@ describe("useTopicTree", () => {
   function createTest() {
     function Test(props: UseTreeInput) {
       Test.result(useTopicTree(props));
-      return null;
+      return ReactNull;
     }
     Test.result = jest.fn();
     return Test;

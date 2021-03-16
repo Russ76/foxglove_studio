@@ -35,7 +35,6 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { bindActionCreators } from "redux";
 
-import styles from "./Panel.module.scss";
 import * as PanelAPI from "@foxglove-studio/app/PanelAPI";
 import {
   addSelectedPanelId,
@@ -80,6 +79,8 @@ import {
 } from "@foxglove-studio/app/util/layout";
 import logEvent, { getEventTags, getEventNames } from "@foxglove-studio/app/util/logEvent";
 import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
+import styles from "./Panel.module.scss";
 
 type Props<Config> = {
   childId?: string;
@@ -492,7 +493,7 @@ export default function Panel<Config extends PanelConfig>(
           dataTest={`panel-mouseenter-container ${childId || ""}`}
           clip
         >
-          {fullScreen ? <div className={styles.notClickable} /> : null}
+          {fullScreen && <div className={styles.notClickable} />}
           {isSelected && !fullScreen && selectedPanelIds.length > 1 && (
             <div data-tab-options className={styles.tabActionsOverlay}>
               <Button style={{ backgroundColor: colors.BLUE }} onClick={groupPanels}>
@@ -532,7 +533,7 @@ export default function Panel<Config extends PanelConfig>(
               </MosaicDragHandle>
             </div>
           )}
-          {fullScreen ? (
+          {fullScreen && (
             <button
               className={styles.exitFullScreen}
               onClick={exitFullScreen}
@@ -540,7 +541,7 @@ export default function Panel<Config extends PanelConfig>(
             >
               <CloseIcon /> <span>Exit fullscreen</span>
             </button>
-          ) : null}
+          )}
           <ErrorBoundary>{child}</ErrorBoundary>
         </Flex>
       </PanelContext.Provider>

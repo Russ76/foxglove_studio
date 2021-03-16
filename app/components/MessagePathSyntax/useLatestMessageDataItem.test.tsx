@@ -12,10 +12,11 @@
 //   You may not use this file except in compliance with the License.
 import { mount } from "enzyme";
 
-import { useLatestMessageDataItem } from "./useLatestMessageDataItem";
 import { MockMessagePipelineProvider } from "@foxglove-studio/app/components/MessagePipeline";
 import { Message, MessageFormat } from "@foxglove-studio/app/players/types";
 import { deepParse } from "@foxglove-studio/app/util/binaryObjects";
+
+import { useLatestMessageDataItem } from "./useLatestMessageDataItem";
 
 const topics = [{ name: "/topic", datatype: "datatype" }];
 const datatypes = {
@@ -44,7 +45,7 @@ describe("useLatestMessageDataItem", () => {
   function createTest(format: MessageFormat = "parsedMessages") {
     function Test({ path }: { path: string }) {
       Test.result(useLatestMessageDataItem(path, format));
-      return null;
+      return ReactNull;
     }
     Test.result = jest.fn();
     return Test;

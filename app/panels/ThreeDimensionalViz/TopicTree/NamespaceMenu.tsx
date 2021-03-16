@@ -16,8 +16,6 @@ import UndoVariantIcon from "@mdi/svg/svg/undo-variant.svg";
 import { useState } from "react";
 import styled from "styled-components";
 
-import { SDotMenuPlaceholder } from "./TreeNodeRow";
-import { OnNamespaceOverrideColorChange, SetEditingNamespace } from "./types";
 import ChildToggle from "@foxglove-studio/app/components/ChildToggle";
 import Icon from "@foxglove-studio/app/components/Icon";
 import KeyboardShortcut from "@foxglove-studio/app/components/KeyboardShortcut";
@@ -31,6 +29,9 @@ import { TopicTreeContext } from "@foxglove-studio/app/panels/ThreeDimensionalVi
 import clipboard from "@foxglove-studio/app/util/clipboard";
 import { useGuaranteedContext } from "@foxglove-studio/app/util/hooks";
 import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
+import { SDotMenuPlaceholder } from "./TreeNodeRow";
+import { OnNamespaceOverrideColorChange, SetEditingNamespace } from "./types";
 
 const DISABLED_STYLE = { cursor: "not-allowed", color: colors.TEXT_MUTED };
 const ICON_SIZE = 18; // The width of the small icon.
@@ -105,10 +106,7 @@ export default function NamespaceMenu({
     ? { width: COLOR_PICKER_AND_ICON_WIDTH }
     : {};
 
-  const { toggleCheckAllAncestors }: any = useGuaranteedContext(
-    TopicTreeContext,
-    "TopicTreeContext",
-  );
+  const { toggleCheckAllAncestors } = useGuaranteedContext(TopicTreeContext, "TopicTreeContext");
   // Don't render the dot menu if the datasources are unavailable.
   if (!providerAvailable) {
     return <SDotMenuPlaceholder />;

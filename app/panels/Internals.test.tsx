@@ -13,11 +13,12 @@
 
 import { mount } from "enzyme";
 
-import { MessagePipelineConsumer } from "../components/MessagePipeline";
-import Internals from "./Internals";
 import { useMessagesByTopic } from "@foxglove-studio/app/PanelAPI";
 import PanelSetup from "@foxglove-studio/app/stories/PanelSetup";
 import { downloadTextFile, objectValues } from "@foxglove-studio/app/util";
+
+import { MessagePipelineConsumer } from "../components/MessagePipeline";
+import Internals from "./Internals";
 
 const mockDownloadTextFile: any = downloadTextFile;
 (objectValues as any).mockImplementation(Object.values); // broken by module mock
@@ -25,12 +26,12 @@ jest.mock("@foxglove-studio/app/util");
 
 function Subscriber({ topic }: { topic: string }) {
   useMessagesByTopic({ topics: [topic], historySize: 1 });
-  return null;
+  return ReactNull;
 }
 
 describe("<Internals>", () => {
   it("displays panel subscribers", () => {
-    const contextFn = jest.fn().mockReturnValue(null);
+    const contextFn = jest.fn().mockReturnValue(ReactNull);
     const wrapper = mount(
       <PanelSetup
         fixture={{
@@ -46,7 +47,7 @@ describe("<Internals>", () => {
     expect(contextFn.mock.calls).toEqual([[expect.objectContaining({ subscriptions: [] })]]);
     wrapper.unmount();
 
-    const anotherContextFn = jest.fn().mockReturnValue(null);
+    const anotherContextFn = jest.fn().mockReturnValue(ReactNull);
     const wrapperWithSubscriber = mount(
       <PanelSetup
         fixture={{

@@ -25,9 +25,6 @@ import { MosaicContext, MosaicWindowContext } from "react-mosaic-component";
 import { useDispatch, useSelector, ReactReduxContext } from "react-redux";
 import { bindActionCreators } from "redux";
 
-import HelpButton from "./HelpButton";
-import MosaicDragHandle from "./MosaicDragHandle";
-import styles from "./index.module.scss";
 import {
   savePanelConfigs,
   changePanelLayout,
@@ -48,6 +45,10 @@ import { State } from "@foxglove-studio/app/reducers";
 import frameless from "@foxglove-studio/app/util/frameless";
 import { TAB_PANEL_TYPE } from "@foxglove-studio/app/util/globalConstants";
 import logEvent, { getEventNames, getEventTags } from "@foxglove-studio/app/util/logEvent";
+
+import HelpButton from "./HelpButton";
+import MosaicDragHandle from "./MosaicDragHandle";
+import styles from "./index.module.scss";
 
 type Props = {
   children?: React.ReactNode;
@@ -141,7 +142,7 @@ function StandardMenuItems({ tabId, isUnknownPanel }: { tabId?: string; isUnknow
   const shareModal = useMemo(() => {
     const id = panelContext?.id;
     if (!id || !showShareModal) {
-      return null;
+      return ReactNull;
     }
 
     const panelConfigById = store.getState().persistedState.panels.savedProps;
@@ -159,7 +160,7 @@ function StandardMenuItems({ tabId, isUnknownPanel }: { tabId?: string; isUnknow
 
   const type = getPanelType();
   if (!type) {
-    return null;
+    return ReactNull;
   }
 
   return (
@@ -303,7 +304,7 @@ export default React.memo<Props>(function PanelToolbar(props: Props) {
   const [containsOpen, setContainsOpen] = useState(false);
 
   if (frameless() || hideToolbars) {
-    return null;
+    return ReactNull;
   }
 
   const isRendered = isHovered || containsOpen || isDragging || !!isUnknownPanel;

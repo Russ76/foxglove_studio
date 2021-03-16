@@ -13,11 +13,12 @@
 
 import React, { useState, useCallback } from "react";
 
-import styles from "./Confirm.module.scss";
 import Button from "@foxglove-studio/app/components/Button";
 import Flex from "@foxglove-studio/app/components/Flex";
 import Modal, { Title } from "@foxglove-studio/app/components/Modal";
 import { RenderToBodyComponent } from "@foxglove-studio/app/components/RenderToBodyComponent";
+
+import styles from "./Confirm.module.scss";
 
 type ConfirmStyle = "danger" | "primary";
 
@@ -44,7 +45,7 @@ type Props = {
 // or false if the user closed the modal with escape or clicked the cancel button
 export default function useConfirm(
   props: Props,
-): { modal: React.ReactElement | null; open: () => void } {
+): { modal?: React.ReactElement | ReactNull; open: () => void } {
   const [isOpen, setIsOpen] = useState(false);
   const open = useCallback(() => setIsOpen(true), []);
 
@@ -53,7 +54,9 @@ export default function useConfirm(
     props.action(ok);
   }
   const confirmStyle = props.confirmStyle ?? "danger";
-  const modal = !isOpen ? null : (
+  const modal = !isOpen ? (
+    ReactNull
+  ) : (
     <RenderToBodyComponent>
       <Modal onRequestClose={() => close(false)}>
         <div className={styles.container}>

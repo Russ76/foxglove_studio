@@ -18,7 +18,6 @@ import { MosaicDragType } from "react-mosaic-component";
 import { useDispatch, useSelector } from "react-redux";
 import styled from "styled-components";
 
-import styles from "./index.module.scss";
 import { dropPanel } from "@foxglove-studio/app/actions/panels";
 import Flex from "@foxglove-studio/app/components/Flex";
 import Icon from "@foxglove-studio/app/components/Icon";
@@ -34,6 +33,8 @@ import {
 } from "@foxglove-studio/app/types/panels";
 import { objectValues } from "@foxglove-studio/app/util";
 import { colors } from "@foxglove-studio/app/util/sharedStyleConstants";
+
+import styles from "./index.module.scss";
 
 const StickyDiv = styled.div`
   color: ${colors.LIGHT};
@@ -166,7 +167,7 @@ function DraggablePanelItem({
   highlighted,
   mosaicId,
 }: PanelItemProps) {
-  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(ReactNull);
   const [__, drag] = useDrag({
     item: { type: MosaicDragType.WINDOW },
     begin: (_monitor) => ({ mosaicId } as any),
@@ -322,7 +323,7 @@ function PanelList(props: Props) {
   ]);
 
   const highlightedPanel = React.useMemo(
-    () => (highlightedPanelIdx != undefined ? filteredItems[highlightedPanelIdx] : null),
+    () => (highlightedPanelIdx != undefined ? filteredItems[highlightedPanelIdx] : undefined),
     [filteredItems, highlightedPanelIdx],
   );
 
@@ -411,7 +412,7 @@ function PanelList(props: Props) {
         {panelCategories.map(({ label }, categoryIdx) => {
           const prevItems = flatMap(filteredItemsByCategoryIdx.slice(0, categoryIdx));
           if (!filteredItemsByCategoryIdx[categoryIdx].length) {
-            return null;
+            return ReactNull;
           }
           return (
             <div key={label} style={{ paddingTop: "8px" }}>

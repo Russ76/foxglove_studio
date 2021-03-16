@@ -21,8 +21,6 @@ import { createSelector } from "reselect";
 import sanitizeHtml from "sanitize-html";
 import styled from "styled-components";
 
-import style from "./DiagnosticStatus.module.scss";
-import { LEVEL_NAMES, DiagnosticInfo, KeyValue, DiagnosticStatusMessage } from "./util";
 import Flex from "@foxglove-studio/app/components/Flex";
 import Icon from "@foxglove-studio/app/components/Icon";
 import Tooltip from "@foxglove-studio/app/components/Tooltip";
@@ -31,6 +29,9 @@ import { openSiblingStateTransitionsPanel } from "@foxglove-studio/app/panels/St
 import { Config } from "@foxglove-studio/app/panels/diagnostics/DiagnosticStatusPanel";
 import colors from "@foxglove-studio/app/styles/colors.module.scss";
 import { PanelConfig } from "@foxglove-studio/app/types/panels";
+
+import style from "./DiagnosticStatus.module.scss";
+import { LEVEL_NAMES, DiagnosticInfo, KeyValue, DiagnosticStatusMessage } from "./util";
 
 const MIN_SPLIT_FRACTION = 0.1;
 
@@ -245,7 +246,7 @@ class DiagnosticStatus extends React.Component<Props, any> {
         );
       } else if (inCollapsedSection) {
         if (ellipsisShown) {
-          return null;
+          return ReactNull;
         }
         ellipsisShown = true;
         return (
@@ -259,7 +260,7 @@ class DiagnosticStatus extends React.Component<Props, any> {
       // We need both `hardware_id` and `name`; one of them is not enough. That's also how we identify
       // what to show in this very panel; see `selectedHardwareId` AND `selectedName` in the config.
       const valuePath = `${topicToRender}.status[:]{hardware_id=="${info.status.hardware_id}"}{name=="${info.status.name}"}.values[:]{key=="${key}"}.value`;
-      let openPlotPanelIconElem = null;
+      let openPlotPanelIconElem = undefined;
       if (value && value.length > 0) {
         openPlotPanelIconElem = !isNaN(Number(value)) ? (
           <Icon
@@ -376,7 +377,7 @@ class DiagnosticStatus extends React.Component<Props, any> {
                       <DotsHorizontalIcon />
                     </Icon>
                   </div>
-                  {this._getSectionsThatCanBeCollapsed().length ? (
+                  {this._getSectionsThatCanBeCollapsed().length > 0 && (
                     <div
                       style={{ color: "white", cursor: "pointer" }}
                       onClick={this._toggleSections}
@@ -398,7 +399,7 @@ class DiagnosticStatus extends React.Component<Props, any> {
                         )}
                       </Icon>
                     </div>
-                  ) : null}
+                  )}
                 </Flex>
               </td>
             </tr>

@@ -2,9 +2,10 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { TcpAddress, TcpServer } from "@foxglove/ros1";
 import EventEmitter from "eventemitter3";
 import net from "net";
+
+import { TcpAddress, TcpServer } from "@foxglove/ros1";
 
 import { TcpSocketNode } from "./TcpSocketNode";
 
@@ -22,7 +23,7 @@ export class TcpServerNode extends EventEmitter implements TcpServer {
 
   address(): TcpAddress | undefined {
     const addr = this.#server.address();
-    if (addr === null || typeof addr === "string") {
+    if (addr == undefined || typeof addr === "string") {
       // Address will only be a string for an IPC (named pipe) server, which
       // should never happen in TcpServerNode
       return undefined;
