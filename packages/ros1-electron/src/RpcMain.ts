@@ -109,16 +109,24 @@ export class RpcMain {
   }
 
   static Create(channel: string, browser: BrowserWindow): RpcMain {
-    const a = new MessageChannelMain(); // renderer client, main server
-    const b = new MessageChannelMain(); // renderer server, main client
+    const rendererClientMainServer = new MessageChannelMain();
+    const rendererServerMainClient = new MessageChannelMain();
     const events = new MessageChannelMain();
 
-    a.port2.start();
-    b.port2.start();
+    rendererClientMainServer.port2.start();
+    rendererServerMainClient.port2.start();
     events.port2.start();
 
-    browser.webContents.postMessage(channel, undefined, [a.port1, b.port1, events.port1]);
-    return new RpcMain(b.port2, a.port2, events.port2);
+    browser.webContents.postMessage(channel, undefined, [
+      rendererClientMainServer.port1,
+      rendererServerMainClient.port1,
+      events.port1,
+    ]);
+    return new RpcMain(
+      rendererServerMainClient.port2,
+      rendererClientMainServer.port2,
+      events.port2,
+    );
   }
 
   emit<K extends keyof RpcMainEventMap, V extends RpcMainEventMap[K]>(
