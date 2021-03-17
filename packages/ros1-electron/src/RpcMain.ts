@@ -108,6 +108,15 @@ export class RpcMain {
     this.#serverHandlers.set(method, handler as RpcHandler);
   }
 
+  emit<K extends keyof RpcMainEventMap, V extends RpcMainEventMap[K]>(
+    eventName: K,
+    id: number,
+    data: V,
+  ): void {
+    const msg: RpcEventPayload = [eventName, id, data];
+    this.#eventPort.postMessage(msg);
+  }
+
   static Create(channel: string, browser: BrowserWindow): RpcMain {
     const rendererClientMainServer = new MessageChannelMain();
     const rendererServerMainClient = new MessageChannelMain();
@@ -127,14 +136,5 @@ export class RpcMain {
       rendererClientMainServer.port2,
       events.port2,
     );
-  }
-
-  emit<K extends keyof RpcMainEventMap, V extends RpcMainEventMap[K]>(
-    eventName: K,
-    id: number,
-    data: V,
-  ): void {
-    const msg: RpcEventPayload = [eventName, id, data];
-    this.#eventPort.postMessage(msg);
   }
 }

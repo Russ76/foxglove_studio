@@ -2,6 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { BrowserWindow } from "electron";
 import { URL } from "whatwg-url";
 
 import { TcpServer, TcpSocket, XmlRpcClient, XmlRpcServer } from "@foxglove/ros1";
@@ -143,7 +144,41 @@ export class RosApiMain {
     });
   }
 
+  shutdown(): void {
+    for (const xmlRpcServer of this.#xmlRpcServers.values()) {
+      xmlRpcServer.close();
+    }
+    for (const tcpServer of this.#tcpServers.values()) {
+      tcpServer.close();
+    }
+    for (const tcpSocket of this.#tcpSockets.values()) {
+      tcpSocket.close();
+    }
+    this.#tcpSockets.clear();
+    this.#tcpServers.clear();
+    this.#xmlRpcClients.clear();
+    this.#xmlRpcServers.clear();
+  }
+
+  stats(): {
+    tcpSockets: number;
+    xmlRpcClients: number;
+    tcpServer: boolean;
+    xmlRpcServer: boolean;
+  } {
+    return {
+      tcpSockets: this.#tcpSockets.size,
+      xmlRpcClients: this.#xmlRpcClients.size,
+      tcpServer: this.#tcpServers.size > 0,
+      xmlRpcServer: this.#xmlRpcServers.size > 0,
+    };
+  }
+
   private _nextId(): number {
     return this.#nextId++;
+  }
+
+  static Create(channel: string, browser: BrowserWindow): RosApiMain {
+    return new RosApiMain(RpcMain.Create(channel, browser));
   }
 }
