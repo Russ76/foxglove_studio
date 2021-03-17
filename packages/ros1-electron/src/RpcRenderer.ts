@@ -23,13 +23,16 @@ export class RpcRenderer {
   #eventHandlers = new Map<string, EventCallback>();
   #nextWaitHandle = 0;
 
+  static windowMessagePorts = new Map<string, readonly MessagePort[]>();
+  static windowMessageHandlers = new Map<string, (ports: readonly MessagePort[]) => void>();
+
   constructor(clientPort: MessagePort, serverPort: MessagePort, eventPort: MessagePort) {
     this.#clientPort = clientPort;
     this.#serverPort = serverPort;
     this.#eventPort = eventPort;
 
     // Listen for responses to RPC calls
-    this.#clientPort.addEventListener("message", (ev: MessageEvent<RpcResponsePayload>) => {
+    this.#clientPort.onmessage = (ev: MessageEvent<RpcResponsePayload>) => {
       const [waitHandle, errMsg, out] = ev.data;
       const callback = this.#callbacks.get(waitHandle);
       if (!callback) {
@@ -40,10 +43,10 @@ export class RpcRenderer {
 
       const err = errMsg != undefined ? new Error(errMsg) : undefined;
       callback(err, out);
-    });
+    };
 
     // Listen for incoming RPC calls
-    this.#serverPort.addEventListener("message", async (ev: MessageEvent<RpcCallPayload>) => {
+    this.#serverPort.onmessage = async (ev: MessageEvent<RpcCallPayload>) => {
       const [method, waitHandle, args] = ev.data;
       const callback = this.#serverHandlers.get(method);
       if (!callback) {
@@ -51,15 +54,17 @@ export class RpcRenderer {
         return;
       }
 
+      const res: RpcResponsePayload = [waitHandle, undefined, undefined];
       try {
-        this.#serverPort.postMessage(await callback(args));
+        res[2] = await callback(args);
       } catch (err) {
-        this.#serverPort.postMessage([waitHandle, `${err}`, undefined]);
+        res[1] = `${err.stack ?? err}`;
       }
-    });
+      this.#serverPort.postMessage(res);
+    };
 
     // Listen for incoming events
-    this.#eventPort.addEventListener("message", (ev: MessageEvent<RpcEventPayload>) => {
+    this.#eventPort.onmessage = (ev: MessageEvent<RpcEventPayload>) => {
       const [eventName, id, data] = ev.data;
       const callback = this.#eventHandlers.get(`${eventName}-${id}`);
       if (!callback) {
@@ -68,7 +73,7 @@ export class RpcRenderer {
       }
 
       callback(data);
-    });
+    };
   }
 
   call<K extends keyof RpcRendererMethodMap, V extends RpcRendererMethodMap[K]>(
@@ -107,19 +112,30 @@ export class RpcRenderer {
     method: K,
     handler: (args: V["args"]) => Promise<V["out"]>,
   ): void {
-    this.#serverHandlers.set(method, handler as RpcHandler);
+    this.#serverHandlers.set(method, (handler as unknown) as RpcHandler);
+  }
+
+  static Initialize(): void {
+    window.onmessage = (ev: MessageEvent) => {
+      if (ev.target !== window || typeof ev.data !== "string" || ev.ports.length !== 3) {
+        return;
+      }
+
+      const channel = ev.data as string;
+      const handler = RpcRenderer.windowMessageHandlers.get(channel);
+      if (handler) {
+        RpcRenderer.windowMessageHandlers.delete(channel);
+        handler(ev.ports);
+      } else {
+        RpcRenderer.windowMessagePorts.set(channel, ev.ports);
+      }
+    };
   }
 
   static Create(channel: string): Promise<RpcRenderer> {
     return new Promise((resolve, reject) => {
-      window.onmessage = (ev: MessageEvent) => {
-        // ev.source === window means the message is coming from the preload
-        // script, as opposed to from an <iframe> or other source
-        if (ev.source !== window || ev.data !== channel) {
-          return;
-        }
-
-        const [clientPort, serverPort, eventPort] = ev.ports;
+      const resolveWithPorts = (ports: readonly MessagePort[]) => {
+        const [clientPort, serverPort, eventPort] = ports;
         if (!clientPort || !serverPort || !eventPort) {
           reject(new Error(`received a message on channel ${channel} with missing ports`));
           return;
@@ -127,6 +143,16 @@ export class RpcRenderer {
 
         resolve(new RpcRenderer(clientPort, serverPort, eventPort));
       };
+
+      const ports = RpcRenderer.windowMessagePorts.get(channel);
+      if (ports != undefined) {
+        // The ports were already posted before this call
+        RpcRenderer.windowMessagePorts.delete(channel);
+        resolveWithPorts(ports);
+      } else {
+        // The ports have not been posted yet. Register a callback and wait
+        RpcRenderer.windowMessageHandlers.set(channel, resolveWithPorts);
+      }
     });
   }
 }

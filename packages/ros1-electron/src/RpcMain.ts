@@ -34,6 +34,10 @@ export class RpcMain {
     this.#serverPort = serverPort;
     this.#eventPort = eventPort;
 
+    clientPort.start();
+    serverPort.start();
+    eventPort.start();
+
     // Listen for responses to RPC calls
     this.#clientPort.addListener("message", (ev: Electron.MessageEvent) => {
       const [waitHandle, errMsg, out] = ev.data as RpcResponsePayload;
@@ -57,11 +61,13 @@ export class RpcMain {
         return;
       }
 
+      const res: RpcResponsePayload = [waitHandle, undefined, undefined];
       try {
-        this.#serverPort.postMessage(await callback(args));
+        res[2] = await callback(args);
       } catch (err) {
-        this.#serverPort.postMessage([waitHandle, `${err}`, undefined]);
+        res[1] = `${err.stack ?? err}`;
       }
+      this.#serverPort.postMessage(res);
     });
 
     // Listen for incoming events

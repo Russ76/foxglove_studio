@@ -4,11 +4,11 @@
 
 import { ipcRenderer } from "electron";
 
-const windowLoaded = new Promise((resolve) => {
-  window.onload = resolve;
-});
-
 export function forwardPortsToRenderer(channel: string): void {
+  const windowLoaded = new Promise((resolve) => {
+    window.onload = resolve;
+  });
+
   ipcRenderer.on(channel, async (event) => {
     await windowLoaded;
     // We use regular window.postMessage to transfer the port from the isolated

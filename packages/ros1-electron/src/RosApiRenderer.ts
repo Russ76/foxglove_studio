@@ -72,6 +72,10 @@ export class RosApiRenderer {
     this.#xmlRpcHandlers.set(`${method}-${serverId}`, handler);
   }
 
+  static Initialize(): void {
+    RpcRenderer.Initialize();
+  }
+
   static async Create(channel: string): Promise<RosApiRenderer> {
     const rpc = await RpcRenderer.Create(channel);
     return new RosApiRenderer(rpc);

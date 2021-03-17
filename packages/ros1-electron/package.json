@@ -14,7 +14,10 @@
   },
   "homepage": "https://foxglove.dev/",
   "main": "src/index.ts",
-  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/browser": "./src/browser.ts"
+  },
   "files": [
     "src"
   ],

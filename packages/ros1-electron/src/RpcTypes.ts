@@ -24,7 +24,7 @@ export type RpcPorts = [clientPort: MessagePort, serverPort: MessagePort, eventP
 
 export type RpcCallback = (err: Error | undefined, res: unknown) => void;
 
-export type RpcHandler = (args: RpcValue) => Promise<RpcResponsePayload>;
+export type RpcHandler = (args: RpcValue) => Promise<RpcValue>;
 
 export type EventCallback = (data: RpcValue) => void;
 
