@@ -232,6 +232,10 @@ function PlayerManager({
 
           break;
         }
+        case "ros1": {
+          // FIXME
+          break;
+        }
         case "ws": {
           const result = await prompt({
             placeholder: "ws://localhost:9090",
