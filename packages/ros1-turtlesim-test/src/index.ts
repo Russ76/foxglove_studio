@@ -22,7 +22,7 @@ async function main() {
       xmlRpcClient,
       xmlRpcCreateClient: XmlRpcClientNode.Create,
       xmlRpcCreateServer: XmlRpcServerNode.Create,
-      tcpConnect: TcpSocketNode.Connect,
+      tcpSocketCreate: TcpSocketNode.Create,
       getPid: PlatformNode.GetPid,
       getHostname: PlatformNode.GetHostname,
     });

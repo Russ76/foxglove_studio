@@ -25,7 +25,11 @@ export class TcpServerRenderer extends EventEmitter implements TcpServer {
       this.emit("close");
     });
     rpc.on("TcpServer_onConnection", this.#serverId, (socketInfo) => {
-      const socket = new TcpSocketRenderer(this.#rpc, socketInfo);
+      const {
+        socketId,
+        remoteAddress: { address: host, port },
+      } = socketInfo;
+      const socket = new TcpSocketRenderer(this.#rpc, host, port, socketId);
       this.emit("connection", socket);
     });
     rpc.on("TcpServer_onError", this.#serverId, (err) => {

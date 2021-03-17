@@ -13,7 +13,7 @@ import { RosFollowerClient } from "./RosFollowerClient";
 import { RosMasterClient } from "./RosMasterClient";
 import { Subscription } from "./Subscription";
 import { TcpConnection } from "./TcpConnection";
-import { TcpConnect, TcpServer } from "./TcpTypes";
+import { TcpSocketCreate, TcpServer } from "./TcpTypes";
 import { XmlRpcClient, XmlRpcCreateClient, XmlRpcCreateServer } from "./XmlRpcTypes";
 
 export type SubscribeOpts = {
@@ -44,7 +44,7 @@ export class RosNode {
   publications = new Map<string, Publication>();
 
   #xmlRpcCreateClient: XmlRpcCreateClient;
-  #tcpConnect: TcpConnect;
+  #tcpSocketCreate: TcpSocketCreate;
   #getPid: GetPid;
   #getHostname: GetHostname;
   #hostname: string | undefined;
@@ -54,7 +54,7 @@ export class RosNode {
     xmlRpcClient: XmlRpcClient;
     xmlRpcCreateClient: XmlRpcCreateClient;
     xmlRpcCreateServer: XmlRpcCreateServer;
-    tcpConnect: TcpConnect;
+    tcpSocketCreate: TcpSocketCreate;
     getPid: GetPid;
     getHostname: GetHostname;
     hostname?: string;
@@ -66,7 +66,7 @@ export class RosNode {
     this.rosFollower = new RosFollower(this);
     this.xmlRpcCreateServer = options.xmlRpcCreateServer;
     this.#xmlRpcCreateClient = options.xmlRpcCreateClient;
-    this.#tcpConnect = options.tcpConnect;
+    this.#tcpSocketCreate = options.tcpSocketCreate;
     this.#getPid = options.getPid;
     this.#getHostname = options.getHostname;
     this.#hostname = options.hostname;
@@ -95,23 +95,17 @@ export class RosNode {
     this.connectionManager.close();
   }
 
-  async subscribe(options: SubscribeOpts): Promise<Subscription> {
+  private async _registerSubscriber(subscription: Subscription): Promise<string[]> {
     const localApiUrl = this.rosFollower.url();
     if (localApiUrl === undefined) {
       throw new Error("Local XMLRPC server is not running");
     }
 
-    const { topic, type } = options;
-    const md5sum = options.md5sum ?? "*";
-    const tcpNoDelay = options.tcpNoDelay ?? false;
-    const subscription = new Subscription(topic, md5sum, type);
-    this.subscriptions.set(topic, subscription);
-
     // Register with rosmaster as a subscriber to this topic
     const [status, msg, publishers] = await this.rosMasterClient.registerSubscriber(
       this.name,
-      topic,
-      type,
+      subscription.name,
+      subscription.dataType,
       localApiUrl.toString(),
     );
 
@@ -123,6 +117,18 @@ export class RosNode {
         `registerSubscriber() did not receive a list of publishers. value=${publishers}`,
       );
     }
+
+    return publishers as string[];
+  }
+
+  async subscribe(options: SubscribeOpts): Promise<Subscription> {
+    const { topic, type } = options;
+    const md5sum = options.md5sum ?? "*";
+    const tcpNoDelay = options.tcpNoDelay ?? false;
+    const subscription = new Subscription(topic, md5sum, type);
+    this.subscriptions.set(topic, subscription);
+
+    const publishers = await this._registerSubscriber(subscription);
 
     // Register with each publisher
     await Promise.all(
@@ -143,9 +149,10 @@ export class RosNode {
         // allow it to complete later, or fail/timeout and go into a retry loop
 
         // Establish a TCP connection to this publisher
-        const socket = await this.#tcpConnect({ host: address, port });
+        const socket = await this.#tcpSocketCreate({ host: address, port });
         const connection = new TcpConnection(socket);
         this.connectionManager.addTcpConnection(connection);
+        await socket.connect();
 
         // Write the initial connection header to the TCP socket
         const header: [string, string][] = [

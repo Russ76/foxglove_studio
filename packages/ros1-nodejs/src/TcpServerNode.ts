@@ -17,7 +17,13 @@ export class TcpServerNode extends EventEmitter implements TcpServer {
     this.#server = server;
 
     server.on("close", () => this.emit("close"));
-    server.on("connection", (socket) => this.emit("connection", new TcpSocketNode(socket)));
+    server.on("connection", (socket) => {
+      const host = socket.remoteAddress;
+      const port = socket.remotePort;
+      if (host != undefined && port != undefined) {
+        this.emit("connection", new TcpSocketNode(host, port, socket));
+      }
+    });
     server.on("error", (err) => this.emit("error", err));
   }
 

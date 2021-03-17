@@ -49,9 +49,9 @@ export class RosApiRenderer {
     return new TcpServerRenderer(this.#rpc, serverId, address);
   };
 
-  TcpConnect = async (options: { host: string; port: number }): Promise<TcpSocket> => {
-    const socketInfo = await this.#rpc.call("TcpSocket_Create", options);
-    return new TcpSocketRenderer(this.#rpc, socketInfo);
+  TcpSocketCreate = async (options: { host: string; port: number }): Promise<TcpSocket> => {
+    const socketId = await this.#rpc.call("TcpSocket_Create", options);
+    return new TcpSocketRenderer(this.#rpc, options.host, options.port, socketId);
   };
 
   XmlRpcCreateClient = async (options: { url: URL }): Promise<XmlRpcClient> => {

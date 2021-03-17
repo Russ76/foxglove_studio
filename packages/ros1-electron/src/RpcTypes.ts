@@ -46,7 +46,8 @@ export interface RpcRendererMethodMap {
   GetDefaultRosMasterUri: RpcCall<void, string>;
   GetHostname: RpcCall<void, string>;
 
-  TcpSocket_Create: RpcCall<{ host: string; port: number }, SocketInfo>;
+  TcpSocket_Create: RpcCall<{ host: string; port: number }, number>;
+  TcpSocket_connect: RpcCall<number, SocketInfo>;
   TcpSocket_close: RpcCall<number, void>;
   TcpSocket_write: RpcCall<[socketId: number, data: Uint8Array], void>;
 
@@ -80,6 +81,7 @@ export interface RpcMainMethodMap {
 
 // RPC events triggered from the main process and received by the renderer
 export interface RpcMainEventMap {
+  TcpSocket_onConnect: undefined;
   TcpSocket_onClose: undefined;
   TcpSocket_onEnd: undefined;
   TcpSocket_onTimeout: undefined;

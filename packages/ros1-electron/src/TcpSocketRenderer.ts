@@ -7,23 +7,26 @@ import EventEmitter from "eventemitter3";
 import { TcpAddress, TcpSocket } from "@foxglove/ros1";
 
 import { RpcRenderer } from "./RpcRenderer";
-import { SocketInfo } from "./RpcTypes";
 
 export class TcpSocketRenderer extends EventEmitter implements TcpSocket {
   #rpc: RpcRenderer;
+  #host: string;
+  #port: number;
   #socketId: number;
   #localAddress?: TcpAddress;
   #remoteAddress?: TcpAddress;
   #fd?: number;
 
-  constructor(rpc: RpcRenderer, info: SocketInfo) {
+  constructor(rpc: RpcRenderer, host: string, port: number, socketId: number) {
     super();
     this.#rpc = rpc;
-    this.#socketId = info.socketId;
-    this.#localAddress = info.localAddress;
-    this.#remoteAddress = info.remoteAddress;
-    this.#fd = info.fd;
+    this.#socketId = socketId;
+    this.#host = host;
+    this.#port = port;
 
+    rpc.on("TcpSocket_onConnect", this.#socketId, () => {
+      this.emit("connect");
+    });
     rpc.on("TcpSocket_onClose", this.#socketId, () => {
       this._setClosed();
       this.emit("close");
@@ -40,7 +43,6 @@ export class TcpSocketRenderer extends EventEmitter implements TcpSocket {
       this.emit("message", data);
     });
     rpc.on("TcpSocket_onTimeout", this.#socketId, () => {
-      this._setClosed();
       this.emit("timeout");
     });
   }
@@ -50,7 +52,7 @@ export class TcpSocketRenderer extends EventEmitter implements TcpSocket {
   }
 
   remoteAddress(): TcpAddress | undefined {
-    return this.#remoteAddress;
+    return this.#remoteAddress ?? { port: this.#port, address: this.#host };
   }
 
   fd(): number | undefined {
@@ -58,7 +60,17 @@ export class TcpSocketRenderer extends EventEmitter implements TcpSocket {
   }
 
   connected(): boolean {
-    return this.#remoteAddress != undefined;
+    return this.#localAddress != undefined;
+  }
+
+  async connect(): Promise<void> {
+    const { remoteAddress, localAddress, fd } = await this.#rpc.call(
+      "TcpSocket_connect",
+      this.#socketId,
+    );
+    this.#remoteAddress = remoteAddress;
+    this.#localAddress = localAddress;
+    this.#fd = fd;
   }
 
   close(): void {
@@ -72,7 +84,6 @@ export class TcpSocketRenderer extends EventEmitter implements TcpSocket {
 
   private _setClosed(): void {
     this.#localAddress = undefined;
-    this.#remoteAddress = undefined;
     this.#fd = undefined;
   }
 }
