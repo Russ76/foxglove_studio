@@ -170,6 +170,25 @@ export class RosNode {
     return subscription;
   }
 
+  async getPublishedTopics(subgraph?: string): Promise<[topic: string, dataType: string][]> {
+    const [status, msg, topicsAndTypes] = await this.rosMasterClient.getPublishedTopics(
+      this.name,
+      subgraph,
+    );
+    if (status !== 1) {
+      throw new Error(`getPublishedTopics returned failure (status=${status}): ${msg}`);
+    }
+    return topicsAndTypes as [string, string][];
+  }
+
+  receivedBytes(): number {
+    let bytes = 0;
+    for (const sub of this.subscriptions.values()) {
+      bytes += sub.publishers.reduce((sum, pub) => sum + pub.connection.stats().bytesReceived, 0);
+    }
+    return bytes;
+  }
+
   static async RequestTopic(
     name: string,
     topic: string,

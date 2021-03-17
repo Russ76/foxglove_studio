@@ -14,7 +14,7 @@ export type HttpAddress = {
 export type XmlRpcValue = string | number | boolean | XmlRpcValue[];
 
 // [code, msg, value]
-export type XmlRpcResponse = [number, string, XmlRpcValue];
+export type XmlRpcResponse = [status: number, msg: string, value: XmlRpcValue];
 
 export type XmlRpcHandler = (args: XmlRpcValue[]) => Promise<XmlRpcResponse>;
 

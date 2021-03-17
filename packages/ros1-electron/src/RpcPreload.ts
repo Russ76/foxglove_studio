@@ -11,7 +11,7 @@ export function forwardPortsToRenderer(channel: string): void {
 
   ipcRenderer.on(channel, async (event) => {
     await windowLoaded;
-    // We use regular window.postMessage to transfer the port from the isolated
+    // We use regular window.postMessage to transfer ports from the isolated
     // world to the main world
     window.postMessage(channel, "*", event.ports);
   });

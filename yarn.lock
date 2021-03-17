@@ -1775,6 +1775,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@foxglove-studio/app@workspace:app"
   dependencies:
+    "@foxglove/ros1": "workspace:packages/ros1"
     "@foxglove/ros1-electron": "workspace:packages/ros1-electron"
     "@mdi/svg": 5.9.55
     "@storybook/addon-actions": 6.2.0-beta.9
