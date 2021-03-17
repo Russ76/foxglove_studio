@@ -31,7 +31,7 @@ export class Subscription {
   readonly name: string;
   readonly md5sum: string;
   readonly dataType: string;
-  #publishers: PublisherLink[] = [];
+  #publishers = new Map<number, PublisherLink>();
   #emitter = new EventEmitter();
 
   constructor(name: string, md5sum: string, dataType: string) {
@@ -40,15 +40,28 @@ export class Subscription {
     this.dataType = dataType;
   }
 
-  addPublisherLink(
+  close(): void {
+    this.#emitter.removeAllListeners();
+    for (const pub of this.#publishers.values()) {
+      pub.connection.close();
+    }
+    this.#publishers.clear();
+  }
+
+  addPublisher(
     connectionId: number,
     rosFollowerClient: RosFollowerClient,
     connection: Connection,
   ): void {
     const publisher = new PublisherLink(connectionId, rosFollowerClient, connection);
-    this.#publishers.push(publisher);
+    this.#publishers.set(connectionId, publisher);
 
     connection.on("message", (msg, data) => this.#emitter.emit("message", msg, data, publisher));
+  }
+
+  removePublisher(connectionId: number): boolean {
+    this.#publishers.get(connectionId)?.connection.close();
+    return this.#publishers.delete(connectionId);
   }
 
   on(
@@ -60,7 +73,7 @@ export class Subscription {
   }
 
   getInfo(): PublisherInfo[] {
-    return this.#publishers.map(
+    return Array.from(this.#publishers.values()).map(
       (pub): PublisherInfo => {
         return [
           pub.connectionId,
@@ -76,7 +89,7 @@ export class Subscription {
   }
 
   getStats(): [string, PublisherStats[]] {
-    const pubStats = this.#publishers.map(
+    const pubStats = Array.from(this.#publishers.values()).map(
       (pub): PublisherStats => {
         const stats = pub.connection.stats();
         return [
@@ -92,6 +105,10 @@ export class Subscription {
   }
 
   receivedBytes(): number {
-    return this.#publishers.reduce((sum, pub) => sum + pub.connection.stats().bytesReceived, 0);
+    let bytes = 0;
+    for (const pub of this.#publishers.values()) {
+      bytes += pub.connection.stats().bytesReceived;
+    }
+    return bytes;
   }
 }

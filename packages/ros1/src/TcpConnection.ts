@@ -58,6 +58,7 @@ export class TcpConnection extends EventEmitter implements Connection {
   }
 
   close(): void {
+    this.removeAllListeners();
     this.#socket.close();
   }
 

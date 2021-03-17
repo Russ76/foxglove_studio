@@ -4,7 +4,6 @@
 
 import { URL } from "whatwg-url";
 
-import { ConnectionManager } from "./ConnectionManager";
 import { GetHostname, GetPid } from "./PlatformTypes";
 import { Publication } from "./Publication";
 import { RosFollower } from "./RosFollower";
@@ -12,7 +11,7 @@ import { RosFollowerClient } from "./RosFollowerClient";
 import { RosMasterClient } from "./RosMasterClient";
 import { Subscription } from "./Subscription";
 import { TcpConnection } from "./TcpConnection";
-import { TcpSocketCreate, TcpServer } from "./TcpTypes";
+import { TcpSocketCreate, TcpServer, TcpAddress } from "./TcpTypes";
 import { XmlRpcClient, XmlRpcCreateClient, XmlRpcCreateServer } from "./XmlRpcTypes";
 
 export type SubscribeOpts = {
@@ -36,7 +35,6 @@ export class RosNode {
   readonly name: string;
   readonly xmlRpcCreateServer: XmlRpcCreateServer;
 
-  connectionManager: ConnectionManager;
   rosMasterClient: RosMasterClient;
   rosFollower: RosFollower;
   subscriptions = new Map<string, Subscription>();
@@ -48,6 +46,8 @@ export class RosNode {
   #getPid: GetPid;
   #getHostname: GetHostname;
   #hostname: string | undefined;
+  #connectionIdCounter = 0;
+  #tcpServer?: TcpServer;
 
   constructor(options: {
     name: string;
@@ -61,7 +61,6 @@ export class RosNode {
     tcpServer?: TcpServer;
   }) {
     this.name = options.name;
-    this.connectionManager = new ConnectionManager(options);
     this.rosMasterClient = new RosMasterClient(options);
     this.rosFollower = new RosFollower(this);
     this.xmlRpcCreateServer = options.xmlRpcCreateServer;
@@ -70,6 +69,7 @@ export class RosNode {
     this.#getPid = options.getPid;
     this.#getHostname = options.getHostname;
     this.#hostname = options.hostname;
+    this.#tcpServer = options.tcpServer;
   }
 
   pid(): Promise<number> {
@@ -90,13 +90,88 @@ export class RosNode {
 
   shutdown(_msg?: string): void {
     this.#running = false;
+    this.#tcpServer?.close();
     this.rosFollower.close();
+    for (const sub of this.subscriptions.values()) {
+      sub.close();
+    }
+    for (const pub of this.publications.values()) {
+      // TODO: Unregister publisher with rosmaster
+      pub.close();
+    }
     this.subscriptions.clear();
     this.publications.clear();
-    this.connectionManager.close();
   }
 
-  private async _registerSubscriber(subscription: Subscription): Promise<string[]> {
+  subscribe(options: SubscribeOpts): Subscription {
+    const { topic, type } = options;
+    const md5sum = options.md5sum ?? "*";
+    const subscription = new Subscription(topic, md5sum, type);
+    this.subscriptions.set(topic, subscription);
+
+    // Asynchronously register this subscription with rosmaster and connect to
+    // each publisher
+    this.#registerSubscriberAndConnect(subscription, options);
+
+    return subscription;
+  }
+
+  unsubscribe(topic: string): boolean {
+    const subscription = this.subscriptions.get(topic);
+    if (!subscription) {
+      return false;
+    }
+
+    subscription.close();
+    this.subscriptions.delete(topic);
+    return true;
+  }
+
+  async getPublishedTopics(subgraph?: string): Promise<[topic: string, dataType: string][]> {
+    const [status, msg, topicsAndTypes] = await this.rosMasterClient.getPublishedTopics(
+      this.name,
+      subgraph,
+    );
+    if (status !== 1) {
+      throw new Error(`getPublishedTopics returned failure (status=${status}): ${msg}`);
+    }
+    return topicsAndTypes as [string, string][];
+  }
+
+  tcpServerAddress(): TcpAddress | undefined {
+    return this.#tcpServer?.address();
+  }
+
+  receivedBytes(): number {
+    let bytes = 0;
+    for (const sub of this.subscriptions.values()) {
+      bytes += sub.receivedBytes();
+    }
+    return bytes;
+  }
+
+  static async RequestTopic(
+    name: string,
+    topic: string,
+    apiClient: RosFollowerClient,
+  ): Promise<{ address: string; port: number }> {
+    const [status, msg, protocol] = await apiClient.requestTopic(name, topic, [["TCPROS"]]);
+
+    if (status !== 1) {
+      throw new Error(`requestTopic("${name}", "${topic}") failed. status=${status}, msg=${msg}`);
+    }
+    if (!Array.isArray(protocol) || protocol.length < 3 || protocol[0] !== "TCPROS") {
+      throw new Error(`TCP not supported by ${apiClient.url()} for topic "${topic}"`);
+    }
+
+    return { port: protocol[2] as number, address: protocol[1] as string };
+  }
+
+  #newConnectionId = (): number => {
+    return this.#connectionIdCounter++;
+  };
+
+  #registerSubscriber = async (subscription: Subscription): Promise<string[]> => {
     if (!this.#running) {
       return Promise.resolve([]);
     }
@@ -124,12 +199,12 @@ export class RosNode {
     }
 
     return publishers as string[];
-  }
+  };
 
-  private async _registerSubscriberAndConnect(
+  #registerSubscriberAndConnect = async (
     subscription: Subscription,
     options: SubscribeOpts,
-  ): Promise<void> {
+  ): Promise<void> => {
     const { topic, type } = options;
     const md5sum = options.md5sum ?? "*";
     const tcpNoDelay = options.tcpNoDelay ?? false;
@@ -139,7 +214,7 @@ export class RosNode {
     }
 
     // TODO: Handle this registration failing
-    const publishers = await this._registerSubscriber(subscription);
+    const publishers = await this.#registerSubscriber(subscription);
 
     if (!this.#running) {
       return;
@@ -191,65 +266,13 @@ export class RosNode {
           return;
         }
 
-        // Hold a reference to this TCP connection
-        this.connectionManager.addTcpConnection(connection);
-
         // Hold a reference to this publisher
-        const connectionId = this.connectionManager.newConnectionId();
-        subscription.addPublisherLink(connectionId, rosFollowerClient, connection);
+        const connectionId = this.#newConnectionId();
+        subscription.addPublisher(connectionId, rosFollowerClient, connection);
 
         // Asynchronously initiate the socket connection
         socket.connect();
       }),
     );
-  }
-
-  subscribe(options: SubscribeOpts): Subscription {
-    const { topic, type } = options;
-    const md5sum = options.md5sum ?? "*";
-    const subscription = new Subscription(topic, md5sum, type);
-    this.subscriptions.set(topic, subscription);
-
-    // Asynchronously register this subscription with rosmaster and connect to
-    // each publisher
-    this._registerSubscriberAndConnect(subscription, options);
-
-    return subscription;
-  }
-
-  async getPublishedTopics(subgraph?: string): Promise<[topic: string, dataType: string][]> {
-    const [status, msg, topicsAndTypes] = await this.rosMasterClient.getPublishedTopics(
-      this.name,
-      subgraph,
-    );
-    if (status !== 1) {
-      throw new Error(`getPublishedTopics returned failure (status=${status}): ${msg}`);
-    }
-    return topicsAndTypes as [string, string][];
-  }
-
-  receivedBytes(): number {
-    let bytes = 0;
-    for (const sub of this.subscriptions.values()) {
-      bytes += sub.receivedBytes();
-    }
-    return bytes;
-  }
-
-  static async RequestTopic(
-    name: string,
-    topic: string,
-    apiClient: RosFollowerClient,
-  ): Promise<{ address: string; port: number }> {
-    const [status, msg, protocol] = await apiClient.requestTopic(name, topic, [["TCPROS"]]);
-
-    if (status !== 1) {
-      throw new Error(`requestTopic("${name}", "${topic}") failed. status=${status}, msg=${msg}`);
-    }
-    if (!Array.isArray(protocol) || protocol.length < 3 || protocol[0] !== "TCPROS") {
-      throw new Error(`TCP not supported by ${apiClient.url()} for topic "${topic}"`);
-    }
-
-    return { port: protocol[2] as number, address: protocol[1] as string };
-  }
+  };
 }

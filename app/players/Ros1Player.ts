@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import { isEqual, sortBy, partition } from "lodash";
-import { MessageReader, Time, parseMessageDefinition } from "rosbag";
+import { MessageReader, Time } from "rosbag";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -19,15 +19,15 @@ import {
   ParsedMessageDefinitionsByTopic,
 } from "@foxglove-studio/app/players/types";
 import { RosDatatypes } from "@foxglove-studio/app/types/RosDatatypes";
-import { objectValues } from "@foxglove-studio/app/util";
-import { bagConnectionsToDatatypes } from "@foxglove-studio/app/util/bagConnectionsHelper";
+// import { objectValues } from "@foxglove-studio/app/util";
+// import { bagConnectionsToDatatypes } from "@foxglove-studio/app/util/bagConnectionsHelper";
 import { wrapJsObject } from "@foxglove-studio/app/util/binaryObjects";
 import debouncePromise from "@foxglove-studio/app/util/debouncePromise";
-import { FREEZE_MESSAGES } from "@foxglove-studio/app/util/globalConstants";
+// import { FREEZE_MESSAGES } from "@foxglove-studio/app/util/globalConstants";
 import { getTopicsByTopicName } from "@foxglove-studio/app/util/selectors";
 import sendNotification from "@foxglove-studio/app/util/sendNotification";
 import { fromMillis, TimestampMethod } from "@foxglove-studio/app/util/time";
-import { RosNode, Subscription } from "@foxglove/ros1";
+import { RosNode } from "@foxglove/ros1";
 import { RosApiRenderer } from "@foxglove/ros1-electron/src/browser";
 
 const capabilities = [PlayerCapabilities.advertise];
@@ -45,8 +45,6 @@ export default class Ros1Player implements Player {
     [datatype: string]: MessageReader;
   } = {};
   _start?: Time; // The time at which we started playing
-  // active subscriptions
-  _topicSubscriptions = new Map<string, Subscription>();
   _requestedSubscriptions: SubscribePayload[] = []; // Requested subscriptions by setSubscriptions()
   _parsedMessages: Message[] = []; // Queue of messages that we'll send in next _emitState() call
   _bobjects: BobjectMessage[] = []; // Queue of bobjects that we'll send in next _emitState() call
@@ -238,61 +236,49 @@ export default class Ros1Player implements Player {
 
     // Subscribe to all topics that we aren't subscribed to yet.
     for (const topicName of topicNames) {
-      if (this._topicSubscriptions.has(topicName)) {
+      if (this._rosClient.subscriptions.has(topicName)) {
         continue;
       }
 
-      // const topic = new roslib.Topic({
-      //   ros: this._rosClient,
-      //   name: topicName,
-      //   compression: "cbor-raw",
-      // });
       const availTopic = availableTopicsByTopicName[topicName];
       if (!availTopic) {
         continue;
       }
       const { datatype } = availTopic;
 
-      // const messageReader = this._messageReadersByDatatype[datatype];
-      // if (!messageReader) {
-      //   continue;
-      // }
-
       const sub = this._rosClient.subscribe({ topic: topicName, type: datatype });
-      this._topicSubscriptions.set(topicName, sub);
 
-      // subHandler = () => {
-      //   if (!this._providerTopics) {
-      //     return;
-      //   }
+      sub.on("message", (msg) => {
+        if (!this._providerTopics) {
+          return;
+        }
 
-      //   const receiveTime = fromMillis(Date.now());
-      //   const innerMessage = messageReader.readMessage(Buffer.from(message.bytes));
-      //   if (this._bobjectTopics.has(topicName) && this._providerDatatypes) {
-      //     this._bobjects.push({
-      //       topic: topicName,
-      //       receiveTime,
-      //       message: wrapJsObject(this._providerDatatypes, datatype, innerMessage),
-      //     });
-      //   }
+        const receiveTime = fromMillis(Date.now());
+        if (this._bobjectTopics.has(topicName) && this._providerDatatypes) {
+          this._bobjects.push({
+            topic: topicName,
+            receiveTime,
+            message: wrapJsObject(this._providerDatatypes, datatype, msg),
+          });
+        }
 
-      //   if (this._parsedTopics.has(topicName)) {
-      //     this._parsedMessages.push({
-      //       topic: topicName,
-      //       receiveTime,
-      //       message: innerMessage as any,
-      //     });
-      //   }
+        if (this._parsedTopics.has(topicName)) {
+          this._parsedMessages.push({
+            topic: topicName,
+            receiveTime,
+            message: msg as any,
+          });
+        }
 
-      //   this._emitState();
-      // }
+        this._emitState();
+      });
     }
 
     // Unsubscribe from topics that we are subscribed to but shouldn't be
-    for (const [topicName, sub] of this._topicSubscriptions) {
+    const subscribedTopics = Array.from(this._rosClient.subscriptions.keys());
+    for (const topicName of subscribedTopics) {
       if (!topicNames.includes(topicName)) {
-        sub.unsubscribe();
-        this._topicSubscriptions.delete(topicName);
+        this._rosClient.unsubscribe(topicName);
       }
     }
   }

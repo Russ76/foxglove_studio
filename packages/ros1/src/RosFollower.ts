@@ -174,7 +174,7 @@ export class RosFollower {
       return Promise.resolve([0, "unsupported protocol", []]);
     }
 
-    const addr = this.#rosNode.connectionManager.tcpServerAddress();
+    const addr = this.#rosNode.tcpServerAddress();
     if (!addr) {
       return Promise.resolve([0, "cannot receive incoming connections", []]);
     }
