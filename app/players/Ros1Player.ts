@@ -76,7 +76,7 @@ export default class Ros1Player implements Player {
       xmlRpcClient,
       xmlRpcCreateClient: rosApi.XmlRpcCreateClient,
       xmlRpcCreateServer: rosApi.XmlRpcCreateServer,
-      tcpConnect: rosApi.TcpConnect,
+      tcpSocketCreate: rosApi.TcpSocketCreate,
       getPid: rosApi.GetPid,
       getHostname: rosApi.GetHostname,
     });
@@ -258,11 +258,8 @@ export default class Ros1Player implements Player {
       //   continue;
       // }
 
-      // FIXME: Return sub immediately, connect lazily
-      // FIXME: sub.on("message", ...)!
-      this._rosClient.subscribe({ topic: topicName, type: datatype }).then((sub) => {
-        this._topicSubscriptions.set(topicName, sub);
-      });
+      const sub = this._rosClient.subscribe({ topic: topicName, type: datatype });
+      this._topicSubscriptions.set(topicName, sub);
 
       // subHandler = () => {
       //   if (!this._providerTopics) {
@@ -292,9 +289,9 @@ export default class Ros1Player implements Player {
     }
 
     // Unsubscribe from topics that we are subscribed to but shouldn't be
-    for (const [topicName, topic] of this._topicSubscriptions) {
+    for (const [topicName, sub] of this._topicSubscriptions) {
       if (!topicNames.includes(topicName)) {
-        topic.unsubscribe();
+        sub.unsubscribe();
         this._topicSubscriptions.delete(topicName);
       }
     }

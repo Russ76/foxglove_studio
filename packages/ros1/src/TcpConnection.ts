@@ -2,13 +2,14 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { EventEmitter } from "eventemitter3";
 import { MessageReader, parseMessageDefinition, RosMsgDefinition } from "rosbag";
 import { TextDecoder, TextEncoder } from "web-encoding";
 
 import { Connection, ConnectionStats } from "./Connection";
 import { TcpAddress, TcpSocket } from "./TcpTypes";
 
-export class TcpConnection implements Connection {
+export class TcpConnection extends EventEmitter implements Connection {
   retries = 0;
 
   #socket: TcpSocket;
@@ -26,6 +27,7 @@ export class TcpConnection implements Connection {
   #msgReader: MessageReader | undefined;
 
   constructor(socket: TcpSocket, requestHeader: Map<string, string>) {
+    super();
     this.#socket = socket;
     this.#requestHeader = requestHeader;
 
@@ -108,8 +110,7 @@ export class TcpConnection implements Connection {
         const msg = this.#msgReader.readMessage(
           Buffer.from(data.buffer, data.byteOffset, data.length),
         );
-        // eslint-disable-next-line no-restricted-syntax
-        console.log(`[MSG] ${JSON.stringify(msg)}`);
+        this.emit("message", msg, data);
       }
     }
   };

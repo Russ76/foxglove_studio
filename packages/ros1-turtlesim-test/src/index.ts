@@ -34,6 +34,15 @@ async function main() {
       type: "turtlesim/Color",
     });
 
+    sub.on("message", (msg, data, pub) => {
+      // eslint-disable-next-line no-restricted-syntax
+      console.log(
+        `[MSG] ${JSON.stringify(msg)} (${
+          data.byteLength
+        } bytes from ${pub.connection.getTransportInfo()})`,
+      );
+    });
+
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // eslint-disable-next-line no-restricted-syntax

@@ -22,4 +22,6 @@ export interface Connection {
   close(): void;
 
   getTransportInfo(): string;
+
+  on(eventName: "message", listener: (msg: unknown, data: Uint8Array) => void): this;
 }

@@ -7,7 +7,6 @@ import { URL } from "whatwg-url";
 import { ConnectionManager } from "./ConnectionManager";
 import { GetHostname, GetPid } from "./PlatformTypes";
 import { Publication } from "./Publication";
-import { PublisherLink } from "./PublisherLink";
 import { RosFollower } from "./RosFollower";
 import { RosFollowerClient } from "./RosFollowerClient";
 import { RosMasterClient } from "./RosMasterClient";
@@ -197,9 +196,7 @@ export class RosNode {
 
         // Hold a reference to this publisher
         const connectionId = this.connectionManager.newConnectionId();
-        subscription.publishers.push(
-          new PublisherLink(connectionId, rosFollowerClient, connection),
-        );
+        subscription.addPublisherLink(connectionId, rosFollowerClient, connection);
 
         // Asynchronously initiate the socket connection
         socket.connect();
@@ -234,7 +231,7 @@ export class RosNode {
   receivedBytes(): number {
     let bytes = 0;
     for (const sub of this.subscriptions.values()) {
-      bytes += sub.publishers.reduce((sum, pub) => sum + pub.connection.stats().bytesReceived, 0);
+      bytes += sub.receivedBytes();
     }
     return bytes;
   }
