@@ -29,10 +29,13 @@ async function main() {
 
     await rosNode.start();
 
-    const sub = await rosNode.subscribe({
+    const sub = rosNode.subscribe({
       topic: "/turtle1/color_sensor",
       type: "turtlesim/Color",
     });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // eslint-disable-next-line no-restricted-syntax
     console.dir(sub.getStats());
   } catch (err) {

@@ -43,6 +43,7 @@ export class RosNode {
   subscriptions = new Map<string, Subscription>();
   publications = new Map<string, Publication>();
 
+  #running = true;
   #xmlRpcCreateClient: XmlRpcCreateClient;
   #tcpSocketCreate: TcpSocketCreate;
   #getPid: GetPid;
@@ -89,6 +90,7 @@ export class RosNode {
   }
 
   shutdown(_msg?: string): void {
+    this.#running = false;
     this.rosFollower.close();
     this.subscriptions.clear();
     this.publications.clear();
@@ -96,6 +98,10 @@ export class RosNode {
   }
 
   private async _registerSubscriber(subscription: Subscription): Promise<string[]> {
+    if (!this.#running) {
+      return Promise.resolve([]);
+    }
+
     const localApiUrl = this.rosFollower.url();
     if (localApiUrl === undefined) {
       throw new Error("Local XMLRPC server is not running");
@@ -121,14 +127,24 @@ export class RosNode {
     return publishers as string[];
   }
 
-  async subscribe(options: SubscribeOpts): Promise<Subscription> {
+  private async _registerSubscriberAndConnect(
+    subscription: Subscription,
+    options: SubscribeOpts,
+  ): Promise<void> {
     const { topic, type } = options;
     const md5sum = options.md5sum ?? "*";
     const tcpNoDelay = options.tcpNoDelay ?? false;
-    const subscription = new Subscription(topic, md5sum, type);
-    this.subscriptions.set(topic, subscription);
 
+    if (!this.#running) {
+      return;
+    }
+
+    // TODO: Handle this registration failing
     const publishers = await this._registerSubscriber(subscription);
+
+    if (!this.#running) {
+      return;
+    }
 
     // Register with each publisher
     await Promise.all(
@@ -138,41 +154,68 @@ export class RosNode {
           return;
         }
 
+        if (!this.#running) {
+          return;
+        }
+
         // Create an XMLRPC client to talk to this publisher
         const xmlRpcClient = await this.#xmlRpcCreateClient({ url });
         const rosFollowerClient = new RosFollowerClient({ xmlRpcClient });
 
+        if (!this.#running) {
+          return;
+        }
+
         // Call requestTopic on this publisher to register ourselves as a subscriber
+        // TODO: Handle this requestTopic() call failing
         const { address, port } = await RosNode.RequestTopic(this.name, topic, rosFollowerClient);
 
-        // TODO: Don't wait for the TCP connection to connect here. Initiate the connection but
-        // allow it to complete later, or fail/timeout and go into a retry loop
+        if (!this.#running) {
+          return;
+        }
 
-        // Establish a TCP connection to this publisher
+        // Create a TCP socket connecting to this publisher
         const socket = await this.#tcpSocketCreate({ host: address, port });
-        const connection = new TcpConnection(socket);
+        const connection = new TcpConnection(
+          socket,
+          new Map<string, string>([
+            ["topic", topic],
+            ["md5sum", md5sum],
+            ["callerid", this.name],
+            ["type", type],
+            ["tcp_nodelay", tcpNoDelay ? "1" : "0"],
+          ]),
+        );
+
+        if (!this.#running) {
+          socket.close();
+          return;
+        }
+
+        // Hold a reference to this TCP connection
         this.connectionManager.addTcpConnection(connection);
-        await socket.connect();
-
-        // Write the initial connection header to the TCP socket
-        const header: [string, string][] = [
-          ["topic", topic],
-          ["md5sum", md5sum],
-          ["callerid", this.name],
-          ["type", type],
-          ["tcp_nodelay", tcpNoDelay ? "1" : "0"],
-        ];
-        await connection.writeHeader(header);
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Hold a reference to this publisher
         const connectionId = this.connectionManager.newConnectionId();
         subscription.publishers.push(
           new PublisherLink(connectionId, rosFollowerClient, connection),
         );
+
+        // Asynchronously initiate the socket connection
+        socket.connect();
       }),
     );
+  }
+
+  subscribe(options: SubscribeOpts): Subscription {
+    const { topic, type } = options;
+    const md5sum = options.md5sum ?? "*";
+    const subscription = new Subscription(topic, md5sum, type);
+    this.subscriptions.set(topic, subscription);
+
+    // Asynchronously register this subscription with rosmaster and connect to
+    // each publisher
+    this._registerSubscriberAndConnect(subscription, options);
 
     return subscription;
   }
