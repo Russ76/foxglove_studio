@@ -6,6 +6,7 @@ import { init as initSentry } from "@sentry/electron";
 import { contextBridge, ipcRenderer } from "electron";
 
 import type { OsContext, OsContextForwardedEvent } from "@foxglove-studio/app/OsContext";
+import { forwardPortsToRenderer } from "@foxglove/ros1-electron";
 
 import LocalFileStorage from "./LocalFileStorage";
 
@@ -78,3 +79,6 @@ const ctx: OsContext = {
 // i.e.: returning a class instance doesn't work because prototypes do not survive the boundary
 const { exposeInMainWorld: exposeToRenderer } = contextBridge; // poorly named
 exposeToRenderer("ctxbridge", ctx);
+
+// Wire up the ROS1 backend in main to the API in renderer
+forwardPortsToRenderer("ros1");

@@ -27,6 +27,7 @@ import fs from "fs";
 import path from "path";
 
 import colors from "@foxglove-studio/app/styles/colors.module.scss";
+import { RosApiMain } from "@foxglove/ros1-electron";
 
 import packageJson from "../package.json";
 import { installMenuInterface } from "./menu";
@@ -35,6 +36,8 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
 const isMac = process.platform === "darwin";
 const isProduction = process.env.NODE_ENV === "production";
+
+let rosApi: RosApiMain | undefined;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -259,6 +262,9 @@ async function createWindow(): Promise<void> {
   mainWindow.webContents.on("did-finish-load", () => {
     loadFilesToOpen();
   });
+
+  // Initialize the main process (node.js) backend for our ROS1 API
+  rosApi = RosApiMain.Create("ros1", mainWindow);
 }
 
 // This method will be called when Electron has finished
@@ -351,4 +357,9 @@ app.on("ready", async () => {
 // Quit when all windows are closed
 app.on("window-all-closed", () => {
   app.quit();
+});
+
+app.on("quit", () => {
+  // Close any lingering socket connections
+  rosApi?.shutdown();
 });

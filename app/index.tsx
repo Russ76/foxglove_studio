@@ -12,6 +12,7 @@ import { getGlobalConfig } from "@foxglove-studio/app/GlobalConfig";
 import installDevtoolsFormatters from "@foxglove-studio/app/util/installDevtoolsFormatters";
 import overwriteFetch from "@foxglove-studio/app/util/overwriteFetch";
 import waitForFonts from "@foxglove-studio/app/util/waitForFonts";
+import { RosApiRenderer } from "@foxglove/ros1-electron/src/browser";
 
 if (typeof process.env.SENTRY_DSN === "string") {
   initSentry({ dsn: process.env.SENTRY_DSN });
@@ -19,6 +20,7 @@ if (typeof process.env.SENTRY_DSN === "string") {
 
 installDevtoolsFormatters();
 overwriteFetch();
+RosApiRenderer.Initialize();
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
@@ -37,6 +39,13 @@ async function main() {
     // eslint-disable-next-line no-restricted-syntax
     console.log("App rendered");
   });
+
+  // Demonstrate RPC with the ROS1 API
+  const rosApi = await RosApiRenderer.Create("ros1");
+  const pid = await rosApi.GetPid();
+  const hostname = await rosApi.GetHostname();
+  // eslint-disable-next-line no-restricted-syntax
+  console.log(`ROS1 API connected, pid=${pid}, hostname=${hostname}`);
 }
 
 main();
