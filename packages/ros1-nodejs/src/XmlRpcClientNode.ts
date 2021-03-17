@@ -5,9 +5,10 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../typings/xmlrpc-rosnodejs.d.ts" />
 
-import type { XmlRpcClient, XmlRpcValue, XmlRpcResponse } from "@foxglove/ros1";
 import { URL } from "whatwg-url";
 import { default as xmlrpc } from "xmlrpc-rosnodejs";
+
+import type { XmlRpcClient, XmlRpcValue, XmlRpcResponse } from "@foxglove/ros1";
 
 export class XmlRpcClientNode implements XmlRpcClient {
   readonly serverUrl: URL;

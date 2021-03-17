@@ -2,6 +2,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { URL } from "whatwg-url";
+
 import { TcpServer, TcpSocket, XmlRpcClient, XmlRpcServer } from "@foxglove/ros1";
 import {
   PlatformNode,
@@ -10,7 +12,6 @@ import {
   XmlRpcClientNode,
   XmlRpcServerNode,
 } from "@foxglove/ros1-nodejs";
-import { URL } from "whatwg-url";
 
 import { RpcMain } from "./RpcMain";
 import { SocketInfo } from "./RpcTypes";

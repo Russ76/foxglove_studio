@@ -16,6 +16,8 @@ export type XmlRpcValue = string | number | boolean | XmlRpcValue[];
 // [code, msg, value]
 export type XmlRpcResponse = [number, string, XmlRpcValue];
 
+export type XmlRpcHandler = (args: XmlRpcValue[]) => Promise<XmlRpcResponse>;
+
 export interface XmlRpcClient {
   readonly serverUrl: URL;
 
@@ -26,7 +28,7 @@ export interface XmlRpcServer extends EventEmitter {
   address(): HttpAddress | undefined;
   close(): void;
 
-  addMethod(method: string, handler: (args: XmlRpcValue[]) => Promise<XmlRpcResponse>): this;
+  addMethod(method: string, handler: XmlRpcHandler): this;
 
   on(eventName: "close", listener: () => void): this;
   on(eventName: "error", listener: (err: Error) => void): this;

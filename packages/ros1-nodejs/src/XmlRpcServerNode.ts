@@ -5,9 +5,10 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../typings/xmlrpc-rosnodejs.d.ts" />
 
-import type { XmlRpcValue, XmlRpcResponse, XmlRpcServer, HttpAddress } from "@foxglove/ros1";
 import EventEmitter from "eventemitter3";
 import { default as xmlrpc } from "xmlrpc-rosnodejs";
+
+import type { XmlRpcValue, XmlRpcResponse, XmlRpcServer, HttpAddress } from "@foxglove/ros1";
 
 export class XmlRpcServerNode extends EventEmitter implements XmlRpcServer {
   #server: xmlrpc.Server;
@@ -54,7 +55,7 @@ export class XmlRpcServerNode extends EventEmitter implements XmlRpcServer {
     return new Promise((resolve, reject) => {
       const server = xmlrpc.createServer(options, () => {
         const address = server.httpServer.address();
-        if (address !== null && typeof address !== "string") {
+        if (address != undefined && typeof address !== "string") {
           resolve(
             new XmlRpcServerNode(server, {
               hostname: options.hostname,

@@ -2,8 +2,9 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { TcpAddress, TcpServer } from "@foxglove/ros1";
 import EventEmitter from "eventemitter3";
+
+import { TcpAddress, TcpServer } from "@foxglove/ros1";
 
 import { RpcRenderer } from "./RpcRenderer";
 import { TcpSocketRenderer } from "./TcpSocketRenderer";
@@ -40,13 +41,5 @@ export class TcpServerRenderer extends EventEmitter implements TcpServer {
   close(): void {
     this.#address = undefined;
     this.#rpc.call("TcpServer_close", this.#serverId);
-  }
-
-  static async Create(
-    rpc: RpcRenderer,
-    options: { host?: string; port?: number; backlog?: number },
-  ): Promise<TcpServerRenderer> {
-    const { serverId, address } = await rpc.call("TcpServer_Create", options);
-    return new TcpServerRenderer(rpc, serverId, address);
   }
 }
