@@ -37,7 +37,6 @@ import {
   PanelsState,
   GLOBAL_STATE_STORAGE_KEY,
   resetInitialPersistedState,
-  defaultPlaybackConfig,
 } from "@foxglove-studio/app/reducers/panels";
 import delay from "@foxglove-studio/app/shared/delay";
 import { getGlobalStoreForTest } from "@foxglove-studio/app/store/getGlobalStore";
@@ -646,7 +645,7 @@ describe("state.persistedState", () => {
         globalVariables: {},
         layout: undefined,
         linkedGlobalVariables: [],
-        playbackConfig: defaultPlaybackConfig,
+        playbackConfig: defaultPersistedState.panels.playbackConfig,
         savedProps: {},
         userNodes: {},
       });

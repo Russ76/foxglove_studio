@@ -86,11 +86,6 @@ import {
 const storage = new Storage();
 
 export const GLOBAL_STATE_STORAGE_KEY = "webvizGlobalState";
-export const defaultPlaybackConfig: PlaybackConfig = {
-  speed: 0.2,
-  messageOrder: "receiveTime",
-  timeDisplayMethod: "ROS",
-};
 
 export type PanelsState = {
   id?: string;
@@ -468,14 +463,18 @@ export const createTabPanelWithMultipleTabs = (
 
 function importPanelLayout(state: PanelsState, payload: ImportPanelLayoutPayload): PanelsState {
   try {
-    const newPanelsState = {
+    const newPanelsState: PanelsState = {
       ...payload,
       layout: payload.layout,
       savedProps: payload.savedProps ?? {},
       globalVariables: payload.globalVariables ?? {},
       userNodes: payload.userNodes ?? {},
       linkedGlobalVariables: payload.linkedGlobalVariables ?? [],
-      playbackConfig: defaultPlaybackConfig,
+      playbackConfig: {
+        speed: 1.0,
+        messageOrder: "receiveTime",
+        timeDisplayMethod: "ROS",
+      },
     };
 
     return newPanelsState;

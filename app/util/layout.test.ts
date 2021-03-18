@@ -14,7 +14,7 @@ import CBOR from "cbor-js";
 import { MosaicNode, MosaicParent, updateTree } from "react-mosaic-component";
 import zlib from "zlib";
 
-import { defaultPlaybackConfig } from "@foxglove-studio/app/reducers/panels";
+import { PlaybackConfig } from "@foxglove-studio/app/types/panels";
 
 import {
   getPanelTypeFromId,
@@ -34,6 +34,12 @@ import {
   stringifyParams,
   dictForPatchCompression,
 } from "./layout";
+
+const playbackConfig: PlaybackConfig = {
+  speed: 1.0,
+  messageOrder: "receiveTime",
+  timeDisplayMethod: "ROS",
+};
 
 const tabConfig = {
   title: "First tab",
@@ -628,7 +634,7 @@ describe("layout", () => {
             layout: "abc",
             globalVariables: { globalVar1: 1, globalVar2: 2 },
             linkedGlobalVariables: [],
-            playbackConfig: defaultPlaybackConfig,
+            playbackConfig: playbackConfig,
             userNodes: {},
             savedProps: {},
           },
@@ -636,7 +642,7 @@ describe("layout", () => {
             layout: "def",
             globalVariables: { globalVar1: 1, globalVar3: 3 },
             linkedGlobalVariables: [],
-            playbackConfig: { ...defaultPlaybackConfig, speed: 0.5 },
+            playbackConfig: { ...playbackConfig, speed: 0.5 },
             userNodes: {},
             savedProps: {},
           },

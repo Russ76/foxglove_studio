@@ -18,7 +18,6 @@ import Dropdown from "@foxglove-studio/app/components/Dropdown";
 import DropdownItem from "@foxglove-studio/app/components/Dropdown/DropdownItem";
 import NoHeaderTopicsButton from "@foxglove-studio/app/components/NoHeaderTopicsButton";
 import { State } from "@foxglove-studio/app/reducers";
-import { defaultPlaybackConfig } from "@foxglove-studio/app/reducers/panels";
 
 const messageOrderLabel = {
   receiveTime: "Receive time",
@@ -37,7 +36,7 @@ export default function MessageOrderControls() {
     [dispatch],
   );
 
-  const orderText = messageOrderLabel[messageOrder] || defaultPlaybackConfig.messageOrder;
+  const orderText = messageOrderLabel[messageOrder] ?? "receiveTime";
   const tooltip = `Order messages by ${orderText.toLowerCase()}`;
   const noHeaderTopicsButton = messageOrder === "headerStamp" && <NoHeaderTopicsButton />;
   return (
