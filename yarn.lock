@@ -1810,10 +1810,10 @@ __metadata:
     history: 5.0.0
     hoist-non-react-statics: 3.3.2
     http-server: 0.12.3
-    idb: 2.1.3
+    idb: 6.0.0
     indent-string: 4.0.0
     int53: 1.0.0
-    inter-ui: 3.15.0
+    inter-ui: 3.15.1
     intervals-fn: 3.0.3
     js-yaml: 4.0.0
     jsondiffpatch: 0.4.1
@@ -13173,10 +13173,10 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"idb@npm:2.1.3":
-  version: 2.1.3
-  resolution: "idb@npm:2.1.3"
-  checksum: b902b2ed3f32daba7edeedeaf3786b2dbdcaf6e194dbe1b5084b59a3a41b5458dec11bed1ce8cd51548e66fb89854ff7a0fce2c55eb1bcf08a49e2acf30a2f63
+"idb@npm:6.0.0":
+  version: 6.0.0
+  resolution: "idb@npm:6.0.0"
+  checksum: 9250243fa964781371dfcacf387e0b3a4fcc36b38d19acb414de88c648f2072527693e45307669cab2a7b77fe5c96e1615958af3d78f4942af5d0e492d148af5
   languageName: node
   linkType: hard
 
@@ -13417,10 +13417,10 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
-"inter-ui@npm:3.15.0":
-  version: 3.15.0
-  resolution: "inter-ui@npm:3.15.0"
-  checksum: eb32dc515e100dad0c605026bd431b6c71f5ea531beca4ae5755a1b9614d3606f54c01db9c77b789a8c18527b0ac11a0bb0d5fd6659b24ed11b85dc8e8a91447
+"inter-ui@npm:3.15.1":
+  version: 3.15.1
+  resolution: "inter-ui@npm:3.15.1"
+  checksum: 30b771fbf028832875d86f701f6c0741704b1eb238ce696fe4dea4abb9acc6f7112f0729a5f56fa43d074b39e179eccb76762c300dddda201462df22b0e6115a
   languageName: node
   linkType: hard
 
