@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import * as PopperJS from "popper.js";
+import { Placement } from "@popperjs/core";
 import { render, createPortal, unmountComponentAtNode } from "react-dom";
 import { Manager, Reference, Popper } from "react-popper";
 
@@ -24,7 +24,7 @@ export type Props = {
   fixed?: boolean;
   delay?: boolean | number;
   offset: { x: number; y: number };
-  placement?: PopperJS.Placement;
+  placement?: Placement;
   defaultShown?: boolean;
   defaultMousePosition?: { x: number; y: number };
 };
@@ -58,7 +58,7 @@ export default class Tooltip extends React.Component<Props, State> {
   };
 
   timeout?: ReturnType<typeof setTimeout>;
-  scheduleUpdate?: () => void;
+  update?: () => void;
 
   // fake element used for positioning the tooltip next to the mouse
   fakeReferenceElement = {
@@ -114,8 +114,8 @@ export default class Tooltip extends React.Component<Props, State> {
   componentDidUpdate() {
     // In the case where defaultShown is set and our defaultMousePosition changed,
     // we need to update the popper's position
-    if (this.scheduleUpdate) {
-      this.scheduleUpdate();
+    if (this.update) {
+      this.update();
     }
   }
 
@@ -136,8 +136,8 @@ export default class Tooltip extends React.Component<Props, State> {
 
   onMouseMove = (e: React.MouseEvent<Element>): void => {
     this.setState({ shown: true, mousePosition: { x: e.clientX, y: e.clientY } });
-    if (this.scheduleUpdate) {
-      this.scheduleUpdate();
+    if (this.update) {
+      this.update();
     }
   };
 
@@ -177,13 +177,14 @@ export default class Tooltip extends React.Component<Props, State> {
         }}
         {...referenceProps}
       >
-        {({ ref, style, scheduleUpdate, placement: renderedPlacement, arrowProps }) => {
+        {({ ref, style, update, placement: renderedPlacement, arrowProps }) => {
           const { body } = document;
           if (!body) {
             return ReactNull;
           }
-          // hold onto the scheduleUpdate function so we can call it when the mouse moves
-          this.scheduleUpdate = scheduleUpdate;
+          // hold onto the update function so we can call it when the mouse moves
+          this.update = update;
+
           return createPortal(
             <div
               ref={ref}
