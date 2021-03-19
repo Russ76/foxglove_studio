@@ -51,12 +51,13 @@ import MosaicDragHandle from "./MosaicDragHandle";
 import styles from "./index.module.scss";
 
 type Props = {
+  // eslint-disable-next-line react/no-unused-prop-types
   children?: React.ReactNode;
   floating?: boolean;
   helpContent?: React.ReactNode;
   menuContent?: React.ReactNode;
-  showPanelName?: boolean;
   additionalIcons?: React.ReactNode;
+  // eslint-disable-next-line react/no-unused-prop-types
   hideToolbars?: boolean;
   showHiddenControlsOnHover?: boolean;
   isUnknownPanel?: boolean;
@@ -64,7 +65,15 @@ type Props = {
 
 // separated into a sub-component so it can always skip re-rendering
 // it never changes after it initially mounts
-function StandardMenuItems({ tabId, isUnknownPanel }: { tabId?: string; isUnknownPanel: boolean }) {
+function StandardMenuItems({
+  tabId,
+  isUnknownPanel,
+  onEditPanelConfig,
+}: {
+  tabId?: string;
+  isUnknownPanel: boolean;
+  onEditPanelConfig: () => void;
+}) {
   const { mosaicActions } = useContext(MosaicContext);
   const { mosaicWindowActions } = useContext(MosaicWindowContext);
   const savedProps = useSelector((state: State) => state.persistedState.panels.savedProps);
@@ -137,26 +146,6 @@ function StandardMenuItems({ tabId, isUnknownPanel }: { tabId?: string; isUnknow
 
   const { store } = useContext(ReactReduxContext);
   const panelContext = usePanelContext();
-  const [showShareModal, setShowShareModal] = useState<boolean>(false);
-
-  const shareModal = useMemo(() => {
-    const id = panelContext?.id;
-    if (!id || !showShareModal) {
-      return ReactNull;
-    }
-
-    const panelConfigById = store.getState().persistedState.panels.savedProps;
-    return (
-      <ShareJsonModal
-        onRequestClose={() => setShowShareModal(false)}
-        value={panelConfigById[id] ?? {}}
-        onChange={(config) =>
-          actions.savePanelConfigs({ configs: [{ id, config, override: true }] })
-        }
-        noun="panel configuration"
-      />
-    );
-  }, [panelContext?.id, showShareModal, store, actions]);
 
   const type = getPanelType();
   if (!type) {
@@ -214,14 +203,13 @@ function StandardMenuItems({ tabId, isUnknownPanel }: { tabId?: string; isUnknow
       {!isUnknownPanel && (
         <Item
           icon={<CodeJsonIcon />}
-          onClick={() => setShowShareModal(true)}
+          onClick={onEditPanelConfig}
           disabled={type === TAB_PANEL_TYPE}
           dataTest="panel-settings-config"
         >
           Import/export panel settings
         </Item>
       )}
-      {shareModal}
     </>
   );
 }
@@ -230,24 +218,27 @@ type PanelToolbarControlsProps = Props & {
   isRendered: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
+  showPanelName?: boolean;
   isUnknownPanel: boolean;
+  onEditPanelConfig: () => void;
 };
 
 // Keep controls, which don't change often, in a pure component in order to avoid re-rendering the
 // whole PanelToolbar when only children change.
-const PanelToolbarControls = React.memo(function PanelToolbarControls(
-  props: PanelToolbarControlsProps,
-) {
+const PanelToolbarControls = React.memo(function PanelToolbarControls({
+  additionalIcons,
+  floating,
+  helpContent,
+  isRendered,
+  isUnknownPanel,
+  menuContent,
+  onDragEnd,
+  onDragStart,
+  showHiddenControlsOnHover,
+  showPanelName,
+  onEditPanelConfig,
+}: PanelToolbarControlsProps) {
   const panelData = useContext(PanelContext);
-  const {
-    floating,
-    helpContent,
-    menuContent,
-    showPanelName,
-    additionalIcons,
-    showHiddenControlsOnHover,
-  } = props;
-  const { isRendered, onDragStart, onDragEnd, isUnknownPanel } = props;
 
   return (
     <div
@@ -265,7 +256,11 @@ const PanelToolbarControls = React.memo(function PanelToolbarControls(
           </Icon>
         }
       >
-        <StandardMenuItems tabId={panelData?.tabId} isUnknownPanel={isUnknownPanel} />
+        <StandardMenuItems
+          tabId={panelData?.tabId}
+          isUnknownPanel={isUnknownPanel}
+          onEditPanelConfig={onEditPanelConfig}
+        />
         {menuContent && <hr />}
         {menuContent}
       </Dropdown>
@@ -286,22 +281,41 @@ const PanelToolbarControls = React.memo(function PanelToolbarControls(
 // Panel toolbar should be added to any panel that's part of the
 // react-mosaic layout.  It adds a drag handle, remove/replace controls
 // and has a place to add custom controls via it's children property
-export default React.memo<Props>(function PanelToolbar(props: Props) {
-  const {
-    children,
-    floating,
-    helpContent,
-    menuContent,
-    additionalIcons,
-    hideToolbars,
-    showHiddenControlsOnHover,
-    isUnknownPanel,
-  } = props;
-  const { isHovered = false } = useContext(PanelContext) || {};
+export default React.memo<Props>(function PanelToolbar({
+  additionalIcons,
+  children,
+  floating,
+  helpContent,
+  hideToolbars,
+  isUnknownPanel,
+  menuContent,
+  showHiddenControlsOnHover,
+}: Props) {
+  const { isHovered = false, id } = useContext(PanelContext) ?? {};
   const [isDragging, setIsDragging] = useState(false);
   const onDragStart = useCallback(() => setIsDragging(true), []);
   const onDragEnd = useCallback(() => setIsDragging(false), []);
   const [containsOpen, setContainsOpen] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const dispatch = useDispatch();
+
+  const { store } = useContext(ReactReduxContext);
+  const shareModal = useMemo(() => {
+    if (!id || !showShareModal) {
+      return ReactNull;
+    }
+    const panelConfigById = store.getState().persistedState.panels.savedProps;
+    return (
+      <ShareJsonModal
+        onRequestClose={() => setShowShareModal(false)}
+        value={panelConfigById[id] ?? {}}
+        onChange={(config) =>
+          dispatch(savePanelConfigs({ configs: [{ id, config, override: true }] }))
+        }
+        noun="panel configuration"
+      />
+    );
+  }, [id, showShareModal, store, dispatch]);
 
   if (frameless() || hideToolbars) {
     return ReactNull;
@@ -312,6 +326,7 @@ export default React.memo<Props>(function PanelToolbar(props: Props) {
     <Dimensions>
       {({ width }) => (
         <ChildToggle.ContainsOpen onChange={setContainsOpen}>
+          {shareModal}
           <div
             className={cx(styles.panelToolbarContainer, {
               [styles.floating]: floating,
@@ -332,6 +347,7 @@ export default React.memo<Props>(function PanelToolbar(props: Props) {
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
                 isUnknownPanel={!!isUnknownPanel}
+                onEditPanelConfig={() => setShowShareModal(true)}
               />
             )}
           </div>

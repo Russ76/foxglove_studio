@@ -43,10 +43,24 @@ export default class LocalFileStorage implements Storage {
     return result;
   }
 
-  async get(datastore: string, key: string): Promise<StorageContent | undefined> {
+  async get(
+    datastore: string,
+    key: string,
+    options?: { encoding: undefined },
+  ): Promise<Uint8Array | undefined>;
+  async get(
+    datastore: string,
+    key: string,
+    options: { encoding: "utf8" },
+  ): Promise<string | undefined>;
+  async get(
+    datastore: string,
+    key: string,
+    options?: { encoding?: "utf8" },
+  ): Promise<StorageContent | undefined> {
     const filePath = await this.makeFilePath(datastore, key);
-    return fs.readFile(filePath).catch((err) => {
-      if (err.code !== "EEXIST") {
+    return fs.readFile(filePath, options).catch((err) => {
+      if (err.code !== "ENOENT") {
         throw err;
       }
       return undefined;
@@ -82,16 +96,19 @@ export default class LocalFileStorage implements Storage {
       throw new Error(`datastore (${datastore}) contains invalid characters`);
     }
 
-    // There are other files and folders in the userDataPath. To avoid conflict we
-    // store our datastores under a studio specific directory
-    const datastoreDir = path.join(basePath, "studio-datastores", datastore);
+    const datastoresDir = path.join(basePath, "studio-datastores");
     try {
-      await fs.mkdir(datastoreDir);
+      await fs.mkdir(datastoresDir);
     } catch (err) {
       if (err.code !== "EEXIST") {
         throw err;
       }
     }
+
+    // There are other files and folders in the userDataPath. To avoid conflict we
+    // store our datastores under a studio specific directory
+    const datastoreDir = path.join(datastoresDir, datastore);
+    await fs.mkdir(datastoreDir, { recursive: true });
     return datastoreDir;
   }
 }

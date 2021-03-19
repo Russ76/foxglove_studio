@@ -6,7 +6,7 @@ import { init as initSentry } from "@sentry/electron";
 import { contextBridge, ipcRenderer } from "electron";
 
 import type { OsContext, OsContextForwardedEvent } from "@foxglove-studio/app/OsContext";
-import { forwardPortsToRenderer } from "@foxglove/ros1-electron";
+import { PreloaderSockets } from "@foxglove/electron-socket/preloader";
 
 import LocalFileStorage from "./LocalFileStorage";
 
@@ -16,6 +16,9 @@ if (typeof process.env.SENTRY_DSN === "string") {
 
 type IpcListener = (ev: unknown, ...args: unknown[]) => void;
 const menuClickListeners = new Map<string, IpcListener>();
+
+// Initialize the RPC channel for electron-socket
+PreloaderSockets.Create();
 
 window.addEventListener("DOMContentLoaded", () => {
   // This input element receives generated dom events from main thread to inject File objects
@@ -79,6 +82,3 @@ const ctx: OsContext = {
 // i.e.: returning a class instance doesn't work because prototypes do not survive the boundary
 const { exposeInMainWorld: exposeToRenderer } = contextBridge; // poorly named
 exposeToRenderer("ctxbridge", ctx);
-
-// Wire up the ROS1 backend in main to the API in renderer
-forwardPortsToRenderer("ros1");
