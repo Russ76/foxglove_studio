@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import Extension from "@foxglove-studio/app/panels/Extension";
 import GlobalVariableSlider from "@foxglove-studio/app/panels/GlobalVariableSlider";
 import GlobalVariables from "@foxglove-studio/app/panels/GlobalVariables";
 import ImageViewPanel from "@foxglove-studio/app/panels/ImageView";
@@ -35,6 +36,7 @@ import { ndash } from "@foxglove-studio/app/util/entities";
 
 export function panelsByCategory() {
   const ros = [
+    { title: "Sample Extension", component: Extension },
     { title: "2D Plot", component: TwoDimensionalPlot },
     { title: "3D", component: ThreeDimensionalViz },
     { title: `Diagnostics ${ndash} Summary`, component: DiagnosticSummary },
