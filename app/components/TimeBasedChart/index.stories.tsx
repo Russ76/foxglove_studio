@@ -10,11 +10,11 @@
 //   This source code is licensed under the Apache License, Version 2.0,
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
-import { storiesOf } from "@storybook/react";
 import cloneDeep from "lodash/cloneDeep";
 import { useState, useCallback } from "react";
 
 import { MockMessagePipelineProvider } from "@foxglove-studio/app/components/MessagePipeline";
+import signal from "@foxglove-studio/app/shared/signal";
 import { triggerWheel } from "@foxglove-studio/app/stories/PanelSetup";
 
 import TimeBasedChart from "./index";
@@ -95,6 +95,120 @@ const commonProps: any = {
 
 const DEFAULT_DELAY = 500;
 
+export default {
+  title: "<TimeBasedChart>",
+  component: TimeBasedChart,
+  parameters: {
+    screenshot: {
+      delay: 1500,
+    },
+  },
+};
+
+export const simple = () => {
+  return (
+    <div style={{ width: "100%", height: "100%", background: "black" }}>
+      <MockMessagePipelineProvider>
+        <TimeBasedChart {...commonProps} />
+      </MockMessagePipelineProvider>
+    </div>
+  );
+};
+
+export const WithVerticalBarNoTooltip = () => {
+  return (
+    <div
+      style={{ width: "100%", height: "100%", background: "black" }}
+      ref={() => {
+        setTimeout(() => {
+          const [canvas] = document.getElementsByTagName("canvas");
+          const { top, left } = canvas!.getBoundingClientRect();
+          // This will show the vertical bar but not the tooltip because the mouse is on top of a different element
+          // (in this case the document), not the canvas itself.
+          document.dispatchEvent(
+            new MouseEvent("mousemove", { clientX: 363 + left, clientY: 400 + top }),
+          );
+        }, DEFAULT_DELAY);
+      }}
+    >
+      <MockMessagePipelineProvider>
+        <TimeBasedChart {...commonProps} />
+      </MockMessagePipelineProvider>
+    </div>
+  );
+};
+
+export const WithTooltipAndVerticalBar = () => {
+  return (
+    <div
+      style={{ width: "100%", height: "100%", background: "black" }}
+      ref={() => {
+        setTimeout(() => {
+          const [canvas] = document.getElementsByTagName("canvas");
+          const { top, left } = canvas!.getBoundingClientRect();
+          canvas!.dispatchEvent(
+            new MouseEvent("mousemove", { clientX: 363 + left, clientY: 400 + top }),
+          );
+        }, DEFAULT_DELAY);
+      }}
+    >
+      <MockMessagePipelineProvider>
+        <TimeBasedChart {...commonProps} />
+      </MockMessagePipelineProvider>
+    </div>
+  );
+};
+
+const postZoomUpdate = signal();
+
+// can zoom and then update with new data without resetting the zoom
+export const CanZoomAndUpdate = () => {
+  const [updateCount, forceUpdate] = useState(0);
+  const newProps = cloneDeep(commonProps);
+  const newDataPoint = cloneDeep(newProps.data.datasets[0].data[0]);
+  newDataPoint.x = 20;
+  newProps.data.datasets[0].data[1] = newDataPoint;
+
+  const refFn = useCallback(() => {
+    // wait for canvas to exist and workers to have started
+    setTimeout(() => {
+      const canvasEl = document.querySelector("canvas");
+      if (!canvasEl) {
+        throw new Error("Unable to querySelect the canvas element");
+      }
+
+      // Zoom is a continuous event, so we need to simulate wheel multiple times
+      for (let i = 0; i < 5; i++) {
+        triggerWheel(canvasEl, 1);
+      }
+
+      // let wheel events finish
+      setTimeout(() => {
+        forceUpdate((old) => ++old);
+      }, 100);
+    }, 1000);
+  }, []);
+
+  if (updateCount > 0) {
+    setImmediate(() => postZoomUpdate.resolve());
+  }
+
+  return (
+    <div style={{ width: 800, height: 800, background: "black" }} ref={refFn}>
+      <MockMessagePipelineProvider>
+        <TimeBasedChart {...newProps} width={800} height={800} />
+      </MockMessagePipelineProvider>
+    </div>
+  );
+};
+
+// Allow for TimeBasedChart to render, worker to start, and scrolling to happen
+CanZoomAndUpdate.parameters = {
+  screenshot: { waitFor: () => postZoomUpdate },
+};
+
+export const CleansUpTheTooltipWhenRemoving = () => <CleansUpTooltipExample />;
+
 function CleansUpTooltipExample() {
   const [hasRenderedOnce, setHasRenderedOnce] = useState<boolean>(false);
   const refFn = useCallback(() => {
@@ -118,36 +232,7 @@ function CleansUpTooltipExample() {
   );
 }
 
-function ZoomExample() {
-  const [, forceUpdate] = useState(0);
-  const newProps = cloneDeep(commonProps);
-  const newDataPoint = cloneDeep(newProps.data.datasets[0].data[0]);
-  newDataPoint.x = 20;
-  newProps.data.datasets[0].data[1] = newDataPoint;
-
-  const refFn = useCallback(() => {
-    setTimeout(() => {
-      const canvasEl = document.querySelector("canvas");
-      // Zoom is a continuous event, so we need to simulate wheel multiple times
-      if (canvasEl) {
-        for (let i = 0; i < 5; i++) {
-          triggerWheel(canvasEl, 1);
-        }
-        setTimeout(() => {
-          forceUpdate((old) => ++old);
-        }, 10);
-      }
-    }, 200);
-  }, []);
-
-  return (
-    <div style={{ width: 800, height: 800, background: "black" }} ref={refFn}>
-      <MockMessagePipelineProvider>
-        <TimeBasedChart {...newProps} width={800} height={800} />
-      </MockMessagePipelineProvider>
-    </div>
-  );
-}
+export const ShouldCallPauseFrameTwice = () => <PauseFrameExample {...commonProps} />;
 
 function PauseFrameExample(props: Props) {
   const [, forceUpdate] = useState(0);
@@ -178,6 +263,9 @@ function PauseFrameExample(props: Props) {
     </div>
   );
 }
+
+// shows `SUCCESS` message with no chart visible
+export const ShouldCallResumeFrameWhenRemoved = () => <RemoveChartExample {...commonProps} />;
 
 // We should still call resumeFrame exactly once when removed in the middle of an update.
 // The way this test works:
@@ -219,70 +307,3 @@ function RemoveChartExample(props: Props) {
     </div>
   );
 }
-
-storiesOf("<TimeBasedChart>", module)
-  .addParameters({
-    screenshot: {
-      delay: 1500,
-    },
-  })
-  .add("default", () => {
-    return (
-      <div style={{ width: "100%", height: "100%", background: "black" }}>
-        <MockMessagePipelineProvider>
-          <TimeBasedChart {...commonProps} />
-        </MockMessagePipelineProvider>
-      </div>
-    );
-  })
-  .add("with vertical bar, no tooltip", () => {
-    return (
-      <div
-        style={{ width: "100%", height: "100%", background: "black" }}
-        ref={() => {
-          setTimeout(() => {
-            const [canvas] = document.getElementsByTagName("canvas");
-            const { top, left } = canvas!.getBoundingClientRect();
-            // This will show the vertical bar but not the tooltip because the mouse is on top of a different element
-            // (in this case the document), not the canvas itself.
-            document.dispatchEvent(
-              new MouseEvent("mousemove", { clientX: 363 + left, clientY: 400 + top }),
-            );
-          }, DEFAULT_DELAY);
-        }}
-      >
-        <MockMessagePipelineProvider>
-          <TimeBasedChart {...commonProps} />
-        </MockMessagePipelineProvider>
-      </div>
-    );
-  })
-  .add("with tooltip and vertical bar", () => {
-    return (
-      <div
-        style={{ width: "100%", height: "100%", background: "black" }}
-        ref={() => {
-          setTimeout(() => {
-            const [canvas] = document.getElementsByTagName("canvas");
-            const { top, left } = canvas!.getBoundingClientRect();
-            canvas!.dispatchEvent(
-              new MouseEvent("mousemove", { clientX: 363 + left, clientY: 400 + top }),
-            );
-          }, DEFAULT_DELAY);
-        }}
-      >
-        <MockMessagePipelineProvider>
-          <TimeBasedChart {...commonProps} />
-        </MockMessagePipelineProvider>
-      </div>
-    );
-  })
-  .add("can zoom and then update with new data without resetting the zoom", () => <ZoomExample />, {
-    screenshot: { delay: 3000 },
-  })
-  .add("cleans up the tooltip when removing the panel", () => <CleansUpTooltipExample />)
-  .add("should call pauseFrame twice", () => <PauseFrameExample {...commonProps} />)
-  .add(
-    "should still call resumeFrame when removed in the middle of an update (shows `SUCCESS` message with no chart visible)",
-    () => <RemoveChartExample {...commonProps} />,
-  );
