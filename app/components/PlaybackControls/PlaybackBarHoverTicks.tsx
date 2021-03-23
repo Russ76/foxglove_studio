@@ -21,8 +21,6 @@ import {
 import HoverBar from "@foxglove-studio/app/components/TimeBasedChart/HoverBar";
 import { toSec } from "@foxglove-studio/app/util/time";
 
-import { ScaleBounds } from "../ReactChartjs/zoomAndPanHelpers";
-
 const sharedTickStyles = css`
   position: absolute;
   left: 0px;

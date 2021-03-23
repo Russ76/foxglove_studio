@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { ChartOptions } from "chart.js";
 import { flatten, pick, round, uniq } from "lodash";
 import DocumentEvents from "react-document-events";
 import ReactDOM from "react-dom";
@@ -388,34 +389,22 @@ function TwoDimensionalPlot(props: Props) {
     };
   }, []);
 
-  const options = React.useMemo(
+  const options = React.useMemo<ChartOptions>(
     () => ({
       title: { display: !!title, text: title },
       scales: {
-        yAxes: [
-          {
-            gridLines: { color: gridColor },
-            scaleLabel: { display: !!yAxisLabel, labelString: yAxisLabel },
-            ticks: hasUserPannedOrZoomed
-              ? {}
-              : {
-                  min: parseFloat(minYVal) ? parseFloat(minYVal) : getBufferedMinMax(allYs).min,
-                  max: parseFloat(maxYVal) ? parseFloat(maxYVal) : getBufferedMinMax(allYs).max,
-                },
-          },
-        ],
-        xAxes: [
-          {
-            gridLines: { color: gridColor },
-            scaleLabel: { display: !!xAxisLabel, labelString: xAxisLabel },
-            ticks: hasUserPannedOrZoomed
-              ? {}
-              : {
-                  min: parseFloat(minXVal) ? parseFloat(minXVal) : getBufferedMinMax(allXs).min,
-                  max: parseFloat(maxXVal) ? parseFloat(maxXVal) : getBufferedMinMax(allXs).max,
-                },
-          },
-        ],
+        y: {
+          gridLines: { color: gridColor },
+          scaleLabel: { display: !!yAxisLabel, labelString: yAxisLabel },
+          min: parseFloat(minYVal) ? parseFloat(minYVal) : getBufferedMinMax(allYs).min,
+          max: parseFloat(maxYVal) ? parseFloat(maxYVal) : getBufferedMinMax(allYs).max,
+        },
+        x: {
+          gridLines: { color: gridColor },
+          scaleLabel: { display: !!xAxisLabel, labelString: xAxisLabel },
+          min: parseFloat(minXVal) ? parseFloat(minXVal) : getBufferedMinMax(allXs).min,
+          max: parseFloat(maxXVal) ? parseFloat(maxXVal) : getBufferedMinMax(allXs).max,
+        },
       },
       color: colors.GRAY,
       animation: { duration: 0 },
@@ -429,7 +418,6 @@ function TwoDimensionalPlot(props: Props) {
       allYs,
       getBufferedMinMax,
       gridColor,
-      hasUserPannedOrZoomed,
       maxXVal,
       maxYVal,
       minXVal,

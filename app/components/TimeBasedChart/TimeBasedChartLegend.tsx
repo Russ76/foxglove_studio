@@ -12,19 +12,16 @@
 //   You may not use this file except in compliance with the License.
 import CheckboxBlankOutlineIcon from "@mdi/svg/svg/checkbox-blank-outline.svg";
 import CheckboxMarkedIcon from "@mdi/svg/svg/checkbox-marked.svg";
+import { ChartDataset } from "chart.js";
 
 import {
   PLOT_DASHED_STYLE,
   PLOT_DOT_DASHED_STYLE,
 } from "@foxglove-studio/app/components/TimeBasedChart/constants";
 
-// This type describes our use, but chart.js supports many more properties if we want them:
-// https://www.chartjs.org/docs/latest/charts/line.html#dataset-properties
-type Dataset = Readonly<{ label: string; color?: string; borderDash?: readonly number[] }>;
-
 type Props = {
   canToggleLines?: boolean;
-  datasets: readonly Dataset[];
+  datasets: readonly ChartDataset[];
   linesToHide: {
     [key: string]: boolean;
   };

@@ -11,207 +11,125 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import Chart from "chart.js";
-import keyBy from "lodash/keyBy";
-import omit from "lodash/omit";
-
-import {
-  ZoomOptions,
-  PanOptions,
-  doZoom,
-  doPan,
-  resetPanDelta,
-  resetZoomDelta,
-  resetZoom,
-  getScaleBounds,
-  ScaleBounds,
-} from "./zoomAndPanHelpers";
-
-type XAxisTicks = "follow" | "displayXAxesTicksInSeconds";
+import { Chart, ChartData, ChartOptions, ChartDataset, ChartType } from "chart.js";
+import type { Context as DatalabelContext } from "chartjs-plugin-datalabels";
+import { Zoom as ZoomPlugin } from "chartjs-plugin-zoom";
+import EventEmitter from "eventemitter3";
 
 type Unpack<A> = A extends Array<infer E> ? E : A;
-type Meta = ReturnType<Chart["getDatasetMeta"]>;
-type MetaData = Unpack<Meta["data"]>;
+//type Meta = ReturnType<Chart["getDatasetMeta"]>;
+//type MetaData = Unpack<Meta["data"]>;
+
+// allows us to override the chart.ctx instance field which zoom plugin uses for adding event listeners
+type MutableContext = Omit<Chart, "ctx"> & { ctx: any };
 
 type EventElement = {
-  data: Unpack<Chart.ChartDataSets["data"]>;
-  view: MetaData["_view"];
+  data: Unpack<ChartDataset["data"]>;
+  //view: MetaData["_view"];
 };
 
-type ChartInstance = Chart & {
-  // Define a method we use but doesn't have TypeScript documentation until a newer version of chart.js
-  getElementsAtEventForMode(
-    e: Event,
-    mode: string,
-    options?: {
-      axis?: string;
-      intersect?: boolean;
-    },
-  ): MetaData[];
-};
+function addEventListener(emitter: EventEmitter) {
+  return (eventName: string, fn?: () => void) => {
+    const existing = emitter.listeners(eventName);
+    if (!fn || existing.includes(fn)) {
+      return;
+    }
 
-// chart.js cannot accept a OffscreenCanvas from @types/offscreencanvas, so use this alias
-type OffscreenCanvas = HTMLCanvasElement;
-
-// These are options that we pass our worker. We have to pass this as a separate object instead of as part of the
-// config because they can only be set using a callback function, which we can't pass across worker boundaries.
-export type ScaleOptions = {
-  // Sets y-axis labels to a fixed width, so that vertically-aligned charts can be directly compared.
-  fixedYAxisWidth?: number;
-  // We might want to hide just the first and last because they can overlap with other labels or have long decimal
-  // points.
-  yAxisTicks?: "show" | "hide" | "hideFirstAndLast";
-  // Display the x-axes with a seconds unit, eg "1 s"
-  xAxisTicks?: XAxisTicks;
-};
-
-function hideAllTicksScaleCallback() {
-  return "";
-}
-
-function hideFirstAndLastTicksScaleCallback(value: number, index: number, values: number[]) {
-  if (index === 0 || index === values.length - 1) {
-    // First and last labels sometimes get super long rounding errors when zooming.
-    // This fixes that.
-    return "";
-  }
-  // Also round the scale value.
-  return `${Math.round(value * 1000) / 1000}`;
-}
-
-function displayTicksInSecondsCallback(value: number) {
-  return `${Math.round(value * 1000) / 1000} s`;
-}
-
-function mapChartElementToEventElement(chartInstance: Chart, item: MetaData): EventElement {
-  return {
-    // It's annoying to have to rely on internal APIs like this, but there's literally no other way and the help
-    // documents themselves say to do this: https://www.chartjs.org/docs/latest/developers/api.html#getelementatevente
-    // eslint-disable-next-line no-underscore-dangle
-    data: chartInstance.data.datasets?.[item._datasetIndex]?.data?.[item._index],
-    // eslint-disable-next-line no-underscore-dangle
-    view: item._view,
+    emitter.on(eventName, fn);
   };
 }
 
-const datasetKeyProvider = (d: Chart.ChartDataSets) => d.label ?? "";
+function removeEventListener(emitter: EventEmitter) {
+  return (eventName: string, fn?: () => void) => {
+    fn && emitter.off(eventName, fn);
+  };
+}
 
 export default class ChartJSManager {
-  id: string;
-  _node: OffscreenCanvas;
-  _chartInstance?: ChartInstance;
+  #chartInstance: Chart;
+  #fakeNodeEvents = new EventEmitter();
+  #fakeDocumentEvents = new EventEmitter();
+  #lastDatalabelClickContext?: DatalabelContext = undefined;
 
   constructor({
-    id,
     node,
     type,
     data,
     options,
-    scaleOptions,
     devicePixelRatio,
   }: {
     id: string;
     node: OffscreenCanvas;
-    type?: Chart.ChartType | string;
-    data?: Chart.ChartData;
-    options: Chart.ChartConfiguration;
-    scaleOptions?: ScaleOptions;
+    type: ChartType;
+    data: ChartData;
+    options: ChartOptions;
     devicePixelRatio: number;
   }) {
-    this.id = id;
-    this._node = node;
+    const fakeNode = {
+      addEventListener: addEventListener(this.#fakeNodeEvents),
+      removeEventListener: removeEventListener(this.#fakeNodeEvents),
+      ownerDocument: {
+        addEventListener: addEventListener(this.#fakeDocumentEvents),
+        removeEventListener: removeEventListener(this.#fakeDocumentEvents),
+      },
+    };
+
+    const origZoomStart = ZoomPlugin.start;
+    ZoomPlugin.start = (chartInstance: MutableContext, args, pluginOptions) => {
+      // swap the canvas with our fake dom node canvas to support zoom plugin addEventListener
+      const ctx = chartInstance.ctx;
+      chartInstance.ctx = {
+        canvas: fakeNode as any,
+      };
+      const res = origZoomStart?.(chartInstance, args, pluginOptions);
+      chartInstance.ctx = ctx;
+      return res;
+    };
+
     const chartInstance = new Chart(node, {
       type,
       data,
-      options: { ...this._addFunctionsToConfig(options, scaleOptions), devicePixelRatio },
-    }) as ChartInstance;
-    this._chartInstance = chartInstance;
+      options: {
+        ...this.addFunctionsToConfig(options),
+        devicePixelRatio,
+      },
+      plugins: [ZoomPlugin],
+    });
+
+    ZoomPlugin.start = origZoomStart;
+    this.#chartInstance = chartInstance;
   }
 
-  getScaleBounds(): ScaleBounds[] | undefined {
-    const chartInstance = this._chartInstance;
-    if (!chartInstance) {
+  wheel(event: any) {
+    event.target.getBoundingClientRect = () => event.target.boundingClientRect;
+    this.#fakeNodeEvents.emit("wheel", event);
+  }
+
+  mousedown(event: any) {
+    event.target.getBoundingClientRect = () => event.target.boundingClientRect;
+    this.#fakeNodeEvents.emit("mousedown", event);
+  }
+
+  mousemove(event: any) {
+    event.target.getBoundingClientRect = () => event.target.boundingClientRect;
+    this.#fakeNodeEvents.emit("mousemove", event);
+  }
+
+  mouseup(event: any) {
+    event.target.getBoundingClientRect = () => event.target.boundingClientRect;
+    // up is registered on the _document_ by zoom plugin
+    this.#fakeDocumentEvents.emit("mouseup", event);
+  }
+
+  update({ data, options }: { data: ChartData; options: ChartOptions }): void {
+    data;
+    options;
+    const instance = this.#chartInstance;
+
+    if (!instance) {
       return;
     }
-
-    return getScaleBounds(chartInstance);
-  }
-
-  doZoom({
-    zoomOptions,
-    percentZoomX,
-    percentZoomY,
-    focalPoint,
-    whichAxesParam,
-  }: {
-    zoomOptions: ZoomOptions;
-    percentZoomX: number;
-    percentZoomY: number;
-    focalPoint?: { x: number; y: number };
-    whichAxesParam?: string;
-  }): ScaleBounds[] | undefined {
-    const chartInstance = this._chartInstance;
-    if (!chartInstance) {
-      return;
-    }
-
-    doZoom(
-      this.id,
-      chartInstance,
-      zoomOptions,
-      percentZoomX,
-      percentZoomY,
-      focalPoint,
-      whichAxesParam,
-    );
-    return getScaleBounds(chartInstance);
-  }
-
-  resetZoomDelta(): void {
-    const chartInstance = this._chartInstance;
-    if (!chartInstance) {
-      return;
-    }
-
-    resetZoomDelta(this.id);
-  }
-
-  doPan({
-    panOptions,
-    deltaX,
-    deltaY,
-  }: {
-    panOptions: PanOptions;
-    deltaX: number;
-    deltaY: number;
-  }): ScaleBounds[] | undefined {
-    const chartInstance = this._chartInstance;
-    if (!chartInstance) {
-      return;
-    }
-
-    doPan(this.id, chartInstance, panOptions, deltaX, deltaY);
-    return getScaleBounds(chartInstance);
-  }
-
-  resetPanDelta(): void {
-    resetPanDelta(this.id);
-  }
-
-  update({
-    data,
-    options,
-    scaleOptions,
-  }: {
-    data: Chart.ChartData;
-    options: Chart.ChartConfiguration;
-    scaleOptions?: ScaleOptions;
-  }): ScaleBounds[] | undefined {
-    const chartInstance = this._chartInstance;
-
-    if (!chartInstance) {
-      return;
-    }
+    /*
 
     if (options) {
       options = this._addFunctionsToConfig(options, scaleOptions);
@@ -220,7 +138,7 @@ export default class ChartJSManager {
 
     // Pipe datasets to chart instance datasets enabling
     // seamless transitions
-    const currentDatasets = this._getCurrentDatasets();
+    const currentDatasets = this._chartInstance?.config?.data?.datasets ?? [];
     const nextDatasets = (data && data.datasets) || [];
     this._checkDatasets(currentDatasets);
 
@@ -257,6 +175,7 @@ export default class ChartJSManager {
       return next;
     });
 
+
     const otherDataProps = omit(data, "datasets");
 
     chartInstance.config.data = {
@@ -267,89 +186,60 @@ export default class ChartJSManager {
     // We can safely replace the dataset array, as long as we retain the _meta property
     // on each dataset.
     chartInstance.config.data.datasets = datasets;
+    */
 
-    chartInstance.update();
-
-    return getScaleBounds(chartInstance);
-  }
-
-  resetZoom(): ScaleBounds[] {
-    const chartInstance = this._chartInstance;
-    if (chartInstance) {
-      resetZoom(this.id, chartInstance);
-    }
-
-    return getScaleBounds(chartInstance);
+    instance.update();
   }
 
   destroy(): void {
-    const chartInstance = this._chartInstance;
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-    this._chartInstance = undefined;
+    this.#chartInstance?.destroy();
   }
 
   // Get the closest element at the same x-axis value as the cursor.
   // This is a somewhat complex function because we attempt to copy the same behavior that the built-in tooltips have
   // for Chart.js without a direct API for it.
   getElementAtXAxis({ event }: { event: Event }): EventElement | undefined {
-    const chartInstance = this._chartInstance;
-    if (chartInstance) {
-      // Elements directly under the cursor.
-      const pointElements = chartInstance.getElementsAtEventForMode(event, "point");
-      const firstPointElement = pointElements[0];
-
-      if (firstPointElement) {
-        // If we have an element directly under the cursor, return it.
-        return mapChartElementToEventElement(chartInstance, firstPointElement);
-      }
-
-      // Elements near the x-axis position of the cursor.
-      const xAxisElements = chartInstance.getElementsAtEventForMode(event, "x", {
-        intersect: false,
-      });
-      const firstXAxisElement = xAxisElements[0];
-
-      if (firstXAxisElement) {
-        // The nearest elements to the cursor, regardless of how close they are.
-        const nearestElements = chartInstance.getElementsAtEventForMode(event, "nearest", {
-          intersect: false,
-        });
-        const nearestXAxisElement = nearestElements.find((item) =>
-          xAxisElements.some(
-            (item2) =>
-              // eslint-disable-next-line no-underscore-dangle
-              item._index === item2._index && item._datasetIndex === item2._datasetIndex,
-          ),
-        );
-        // If we have elements on the x-axis, return the nearest element if we can find it.
-        if (nearestXAxisElement) {
-          return mapChartElementToEventElement(chartInstance, nearestXAxisElement);
-        }
-        // Otherwise just return the first element on the x-axis.
-        return mapChartElementToEventElement(chartInstance, firstXAxisElement);
-      }
-    }
+    event;
+    // fixme I think chartjs has this exposed now
     return undefined;
   }
 
   getDatalabelAtEvent({ event }: { event: Event }): unknown {
-    // Disabling type checking for this method as there are multiple cases of poking into internal members
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const chartInstance = this._chartInstance as any;
-    if (chartInstance) {
-      const chartDatalabel = chartInstance.$datalabels.getLabelAtEvent(event);
-      if (chartDatalabel) {
-        const context = chartDatalabel.$context;
-        return context.dataset.data[context.dataIndex];
-      }
-    }
-    return undefined;
+    const chartInstance = this.#chartInstance;
+    chartInstance.notifyPlugins("beforeEvent", { event });
+
+    // clear the stored click context - we have consumed it
+    const context = this.#lastDatalabelClickContext;
+    this.#lastDatalabelClickContext = undefined;
+
+    return context?.dataset.data[context.dataIndex];
   }
 
-  _addFunctionsToConfig(config: any, scaleOptions?: ScaleOptions): typeof config {
-    if (config && config.plugins.datalabels) {
+  // Since we cannot serialize functions over rpc, we add their handling here
+  private addFunctionsToConfig(config: ChartOptions): typeof config {
+    if (config.plugins) {
+      config.plugins.zoom = {
+        zoom: {
+          enabled: true,
+          speed: 0.1,
+          //drag: true,
+        },
+        pan: {
+          enabled: true,
+        },
+      };
+    }
+
+    if (config && config.plugins?.datalabels) {
+      // process _click_ events to get the label we clicked on
+      // this is because datalabels does not export any public methods to lookup the clicked label
+      // maybe we contribute a patch upstream with the explanation for web-worker use
+      config.plugins.datalabels.listeners = {
+        click: (context: DatalabelContext) => {
+          this.#lastDatalabelClickContext = context;
+        },
+      };
+
       // This controls which datalabels are displayed. Only display labels for datapoints that include a "label"
       // property.
       config.plugins.datalabels.formatter = (value: any, _context: any) => {
@@ -359,14 +249,16 @@ export default class ChartJSManager {
         // eslint-disable-next-line no-restricted-syntax
         return label != undefined ? label : null;
       };
+
       // Override color so that it can be set per-dataset.
-      const staticColor = config.plugins.datalabels.color || "white";
+      const staticColor = config.plugins.datalabels.color ?? "white";
       config.plugins.datalabels.color = (context: any) => {
         const value = context.dataset.data[context.dataIndex];
-        return value?.labelColor || staticColor;
+        return value?.labelColor ?? staticColor;
       };
     }
 
+    /*
     if (scaleOptions) {
       for (const scale of config.scales.yAxes) {
         if (scaleOptions.fixedYAxisWidth != undefined) {
@@ -393,36 +285,8 @@ export default class ChartJSManager {
         }
       }
     }
+    */
 
     return config;
-  }
-
-  _checkDatasets(datasets: Chart.ChartDataSets[]): void {
-    const isDev = process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "prod";
-    const multipleDatasets = datasets.length > 1;
-
-    if (isDev && multipleDatasets) {
-      let shouldWarn = false;
-      datasets.forEach((dataset) => {
-        if (!dataset.label) {
-          shouldWarn = true;
-        }
-      });
-
-      if (shouldWarn) {
-        console.error(
-          '[ChartJSManager] Warning: Each dataset needs a unique key. By default, the "label" property on each dataset is used.',
-        );
-      }
-    }
-  }
-
-  _getCurrentDatasets(): Chart.ChartDataSets[] {
-    return (
-      (this._chartInstance &&
-        this._chartInstance.config.data &&
-        this._chartInstance.config.data.datasets) ||
-      []
-    );
   }
 }

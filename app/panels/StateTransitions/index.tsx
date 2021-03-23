@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { ChartOptions, ScaleOptionsByType } from "chart.js";
 import { uniq } from "lodash";
 import { useMemo } from "react";
 import stringHash from "string-hash";
@@ -24,13 +25,13 @@ import MessagePathInput from "@foxglove-studio/app/components/MessagePathSyntax/
 import useMessagesByPath from "@foxglove-studio/app/components/MessagePathSyntax/useMessagesByPath";
 import Panel from "@foxglove-studio/app/components/Panel";
 import PanelToolbar from "@foxglove-studio/app/components/PanelToolbar";
+import { ScaleOptions } from "@foxglove-studio/app/components/ReactChartjs";
 import TimeBasedChart, {
   getTooltipItemForMessageHistoryItem,
   TimeBasedChartTooltipData,
   DataPoint,
 } from "@foxglove-studio/app/components/TimeBasedChart";
 import { getGlobalHooks } from "@foxglove-studio/app/loadWebviz";
-import mixins from "@foxglove-studio/app/styles/mixins.module.scss";
 import { PanelConfig } from "@foxglove-studio/app/types/panels";
 import { positiveModulo } from "@foxglove-studio/app/util";
 import { darkColor, lineColors } from "@foxglove-studio/app/util/plotColors";
@@ -134,20 +135,18 @@ const SInputDelete = styled.div`
   }
 `;
 
-const yAxes = [
-  {
-    ticks: {
-      fontFamily: mixins.monospaceFont,
-      fontSize: 10,
-      fontColor: "#eee",
-      maxRotation: 0,
-    },
-    type: "category",
-    offset: true,
+const yAxes: ScaleOptionsByType = {
+  ticks: {
+    //fontFamily: mixins.monospaceFont,
+    //fontSize: 10,
+    //fontColor: "#eee",
+    maxRotation: 0,
   },
-];
+  type: "category",
+  offset: true,
+};
 
-const plugins: Chart.ChartPluginsOptions = {
+const plugins: ChartOptions["plugins"] = {
   datalabels: {
     anchor: "center",
     align: -45,
@@ -159,10 +158,9 @@ const plugins: Chart.ChartPluginsOptions = {
       weight: fontWeight,
     },
   },
-  multicolorLineYOffset: 6,
 };
 
-const scaleOptions = {
+const scaleOptions: ScaleOptions = {
   // Hide all y-axis ticks since each bar on the y-axis is just a separate path.
   yAxisTicks: "hide",
 };
@@ -198,7 +196,10 @@ const StateTransitions = React.memo(function StateTransitions(props: Props) {
       throw new Error("index not set");
     }
     const newPaths = config.paths.slice();
-    newPaths[index] = { ...newPaths[index], value: value.trim() };
+    const newPath = newPaths[index];
+    if (newPath) {
+      newPaths[index] = { ...newPath, value: value.trim() };
+    }
     saveConfig({ paths: newPaths });
   };
 
@@ -207,7 +208,10 @@ const StateTransitions = React.memo(function StateTransitions(props: Props) {
       throw new Error("index not set");
     }
     const newPaths = config.paths.slice();
-    newPaths[index] = { ...newPaths[index], timestampMethod: value };
+    const newPath = newPaths[index];
+    if (newPath) {
+      newPaths[index] = { ...newPath, timestampMethod: value };
+    }
     saveConfig({ paths: newPaths });
   };
 
@@ -244,18 +248,20 @@ const StateTransitions = React.memo(function StateTransitions(props: Props) {
       const baseColors = (getGlobalHooks() as any).perPanelHooks().StateTransitions
         .customStateTransitionColors[path] || [grey, ...lineColors];
       let previousValue, previousTimestamp;
-      for (let index = 0; index < itemsByPath[path].length; index++) {
-        const item = getTooltipItemForMessageHistoryItem(itemsByPath[path][index]);
-        if (item.queriedData.length !== 1) {
-          continue;
-        }
 
+      for (const itemByPath of itemsByPath[path] ?? []) {
+        const item = getTooltipItemForMessageHistoryItem(itemByPath);
         const timestamp = timestampMethod === "headerStamp" ? item.headerStamp : item.receiveTime;
         if (!timestamp) {
           continue;
         }
 
-        const { constantName, value } = item.queriedData[0];
+        const queriedData = item.queriedData[0];
+        if (item.queriedData.length !== 1 || !queriedData) {
+          continue;
+        }
+
+        const { constantName, value } = queriedData;
 
         // Skip duplicates.
         if (
@@ -342,7 +348,7 @@ const StateTransitions = React.memo(function StateTransitions(props: Props) {
                 xAxisIsPlaybackTime
                 yAxes={yAxes}
                 plugins={plugins}
-                scaleOptions={scaleOptions as any}
+                scaleOptions={scaleOptions}
                 tooltips={tooltips}
               />
 

@@ -14,11 +14,6 @@
 import { useSelector } from "react-redux";
 import styled from "styled-components";
 
-import {
-  getChartPx,
-  ScaleBounds,
-} from "@foxglove-studio/app/components/ReactChartjs/zoomAndPanHelpers";
-
 const SWrapper = styled.div`
   top: 0;
   bottom: 0;

@@ -11,24 +11,21 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import ChartJSChart from "chart.js";
+import { Chart } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import datalabelPlugin from "chartjs-plugin-datalabels";
 
 import installMulticolorLineChart from "@foxglove-studio/app/util/multicolorLineChart";
 
-export default function installChartjs(Chart: any = ChartJSChart) {
-  Chart.plugins.register(annotationPlugin);
-  Chart.plugins.register(datalabelPlugin);
-  installMulticolorLineChart(Chart);
+// fixme - this and multicolor should be installed on the chart instance not on global!!
+export default function installChartjs(chart: typeof Chart = Chart) {
+  chart.register(annotationPlugin);
+  chart.register(datalabelPlugin);
+
+  // fixme
+  //installMulticolorLineChart(Chart);
 
   // Otherwise we'd get labels everywhere.
-  Chart.defaults.global.plugins.datalabels = {};
-  Chart.defaults.global.plugins.datalabels.display = false;
-
-  if (Chart.plugins.count() !== 5) {
-    throw new Error(
-      "Incorrect number of Chart.js plugins; one probably has not loaded correctly (make sure we don't have duplicate chart.js instances when running `yarn list`.",
-    );
-  }
+  //chart.defaults.plugins.datalabels = {};
+  //chart.defaults.plugins.datalabels.display = false;
 }

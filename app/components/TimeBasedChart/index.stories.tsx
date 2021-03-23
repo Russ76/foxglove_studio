@@ -22,7 +22,8 @@ import type { Props } from "./index";
 
 const dataX = 0.000057603000000000004;
 const dataY = 5.544444561004639;
-const path = "/turtle1/pose.x";
+//const path = "/turtle1/pose.x";
+// fixme - this should not be _any_
 const tooltipData: any = {
   x: dataX,
   y: dataY,
@@ -37,7 +38,7 @@ const tooltipData: any = {
   startTime: { sec: 1396293889, nsec: 156763 },
 };
 
-const commonProps: any = {
+const commonProps: Props = {
   isSynced: true,
   zoom: true,
   width: 867.272705078125,
@@ -47,49 +48,45 @@ const commonProps: any = {
       {
         borderColor: "#4e98e2",
         label: "/turtle1/pose.x",
-        key: "0",
         showLine: true,
-        fill: false,
         borderWidth: 1,
         pointRadius: 1.5,
         pointHoverRadius: 3,
         pointBackgroundColor: "#74beff",
         pointBorderColor: "transparent",
-        path,
+        //path,
         data: [
           {
             x: dataX,
             y: dataY,
-            tooltip: tooltipData,
           },
         ],
       },
       {
         borderColor: "#f5774d",
         label: "a42771fb-b547-4c61-bbaa-9059dec68e49",
-        key: "1",
         showLine: true,
-        fill: false,
         borderWidth: 1,
         pointRadius: 1.5,
         pointHoverRadius: 3,
         pointBackgroundColor: "#ff9d73",
         pointBorderColor: "transparent",
         data: [],
-        path: "",
+        //path: "",
       },
     ],
   },
   tooltips: [tooltipData],
   annotations: [],
   type: "scatter",
-  yAxes: [
-    {
-      id: "Y_AXIS_ID",
-      ticks: { precision: 3 },
-      gridLines: { color: "rgba(255, 255, 255, 0.2)", zeroLineColor: "rgba(255, 255, 255, 0.2)" },
-    },
-  ],
+  xAxes: {
+    ticks: { precision: 3 },
+    grid: { color: "rgba(255, 255, 255, 0.2)" },
+  },
+  yAxes: {
+    ticks: { precision: 3 },
+    grid: { color: "rgba(255, 255, 255, 0.2)" },
+  },
   xAxisIsPlaybackTime: true,
 };
 

@@ -13,13 +13,11 @@
 
 import { AnnotationOptions } from "chartjs-plugin-annotation";
 import flatten from "lodash/flatten";
-import React, { memo } from "react";
-import { createSelector } from "reselect";
+import { memo, useMemo } from "react";
 import { Time } from "rosbag";
 import { v4 as uuidv4 } from "uuid";
 
 import Dimensions from "@foxglove-studio/app/components/Dimensions";
-import { ScaleOptions } from "@foxglove-studio/app/components/ReactChartjs";
 import TimeBasedChart, {
   ChartDefaultView,
   TimeBasedChartTooltipData,
@@ -308,11 +306,10 @@ function getAnnotationFromReferenceLine(path: PlotPath, index: number): Annotati
     type: "line",
     drawTime: "beforeDatasetsDraw",
     scaleID: Y_AXIS_ID,
-    label: { content: path.value },
+    label: { content: path.value, width: "100%", height: "100%" },
     borderColor,
     borderDash: [5, 5],
     borderWidth: 1,
-    mode: "horizontal",
     value: Number.parseFloat(path.value),
   };
 }
@@ -367,31 +364,6 @@ function getAnnotations(paths: PlotPath[]) {
   });
 }
 
-type YAxesInterface = { minY: number; maxY: number; scaleId: string };
-// min/maxYValue is NaN when it's unset, and an actual number otherwise.
-const yAxes = createSelector<YAxesInterface, unknown, Chart.ChartYAxe[], unknown>(
-  // @ts-expect-error investigate correct argument here
-  (params) => params,
-  ({ minY, maxY, scaleId }: YAxesInterface) => {
-    const min = isNaN(minY) ? undefined : minY;
-    const max = isNaN(maxY) ? undefined : maxY;
-    return [
-      {
-        id: scaleId,
-        ticks: {
-          min,
-          max,
-          precision: 3,
-        },
-        gridLines: {
-          color: "rgba(255, 255, 255, 0.2)",
-          zeroLineColor: "rgba(255, 255, 255, 0.2)",
-        },
-      },
-    ];
-  },
-);
-
 type PlotChartProps = {
   paths: PlotPath[];
   minYValue: number;
@@ -425,6 +397,23 @@ export default memo<PlotChartProps>(function PlotChart(props: PlotChartProps) {
   } = props;
   const annotations = getAnnotations(paths);
 
+  const yAxes = useMemo(() => {
+    const min = isNaN(minYValue) ? undefined : minYValue;
+    const max = isNaN(maxYValue) ? undefined : maxYValue;
+    return {
+      id: Y_AXIS_ID,
+      ticks: {
+        min,
+        max,
+        precision: 3,
+      },
+      gridLines: {
+        color: "rgba(255, 255, 255, 0.2)",
+        zeroLineColor: "rgba(255, 255, 255, 0.2)",
+      },
+    };
+  }, [maxYValue, minYValue]);
+
   return (
     <div className={styles.root}>
       <Dimensions>
@@ -439,7 +428,7 @@ export default memo<PlotChartProps>(function PlotChart(props: PlotChartProps) {
             tooltips={tooltips}
             annotations={annotations}
             type="scatter"
-            yAxes={yAxes({ minY: minYValue, maxY: maxYValue, scaleId: Y_AXIS_ID })}
+            yAxes={yAxes}
             saveCurrentView={saveCurrentView}
             xAxisIsPlaybackTime={xAxisVal === "timestamp"}
             scaleOptions={scaleOptions}
