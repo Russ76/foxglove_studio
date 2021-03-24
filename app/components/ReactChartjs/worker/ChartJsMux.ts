@@ -31,11 +31,8 @@ import {
 import { RpcLike } from "@foxglove-studio/app/util/FakeRpc";
 import Rpc from "@foxglove-studio/app/util/Rpc";
 import { setupWorker } from "@foxglove-studio/app/util/RpcWorkerUtils";
-import installChartjs from "@foxglove-studio/app/util/installChartjs";
 
 import ChartJSManager from "./ChartJSManager";
-
-let hasInstalledChartjs = false;
 
 Chart.register(
   LineElement,
@@ -60,10 +57,6 @@ export default class ChartJsMux {
   #managers = new Map<string, ChartJSManager>();
 
   constructor(rpc: RpcLike) {
-    if (!hasInstalledChartjs) {
-      installChartjs(Chart);
-      hasInstalledChartjs = true;
-    }
     this.#rpc = rpc;
 
     // fixme - why are we checking instanceof here?
@@ -76,6 +69,7 @@ export default class ChartJsMux {
     rpc.receive("initialize", (args: any) => {
       const manager = new ChartJSManager(args);
       this.#managers.set(args.id, manager);
+      return manager.getScales();
     });
     rpc.receive("wheel", (args: any) => this.#managers.get(args.id)?.wheel(args.event));
     rpc.receive("mousedown", (args: any) => this.#managers.get(args.id)?.mousedown(args.event));

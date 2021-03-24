@@ -56,6 +56,11 @@ const props: ComponentProps<typeof ChartComponent> = {
         offset: 5,
         color: "white",
       },
+      zoom: {
+        zoom: {
+          enabled: true,
+        },
+      },
     },
     scales: {
       y: {

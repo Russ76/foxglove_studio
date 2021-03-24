@@ -2,16 +2,17 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { ChartOptions, ChartData } from "chart.js";
+import { ChartOptions, ChartData, Scale } from "chart.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
+import { RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
 import WebWorkerManager from "@foxglove-studio/app/util/WebWorkerManager";
 
 // Webworker Manager wants a constructor so we need to have a "class" wrapper
 class ChartJSWorker {
   constructor() {
-    return new Worker(new URL("./ChartJSWorker.worker", import.meta.url));
+    return new Worker(new URL("./worker/main", import.meta.url));
   }
 }
 
@@ -24,6 +25,9 @@ type Props = {
   width: number;
   onClick?: (arg0: React.MouseEvent<HTMLCanvasElement>, datalabel: unknown) => void;
   //onPanZoom?: (arg0: ScaleBounds[]) => void;
+
+  // called when the chart scales have updated
+  onScalesUpdate?: (scales: RpcScales) => void;
 
   // fixme - I think the message pipeline needs this to know when rendering is complete
   onChartUpdate?: () => void;
@@ -54,6 +58,9 @@ function Chart(props: Props) {
   const [id] = useState(props.id ?? uuidv4);
   const initialized = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(ReactNull);
+  const [currentScales, setScales] = useState<RpcScales | undefined>(undefined);
+
+  const zoomEnabled = props.options.plugins?.zoom?.zoom?.enabled;
 
   const { type, data, options, width, height } = props;
 
@@ -64,7 +71,7 @@ function Chart(props: Props) {
   // helper function to send rpc to our worker - all invocations need an _id_ so we inject it here
   const rpcSend = useCallback(
     (topic: string, payload?: any, transferrables?: unknown[]) => {
-      return rpc.send(topic, { id, ...payload }, transferrables);
+      return rpc.send<RpcScales>(topic, { id, ...payload }, transferrables);
     },
     [id, rpc],
   );
@@ -79,6 +86,24 @@ function Chart(props: Props) {
       webWorkerManager.unregisterWorkerListener(id);
     };
   }, [id, rpcSend]);
+
+  const maybeUpdateScales = useCallback((newScales: RpcScales) => {
+    setScales((oldScales) => {
+      // cheap hack to only update the scales when the values change
+      // avoids triggering handlers that depend on scales
+      const oldStr = JSON.stringify(oldScales);
+      const newStr = JSON.stringify(newScales);
+      return oldStr === newStr ? oldScales : newScales;
+    });
+  }, []);
+
+  // trigger when scales update
+  const onScalesUpdate = props.onScalesUpdate;
+  useEffect(() => {
+    if (currentScales) {
+      onScalesUpdate?.(currentScales);
+    }
+  }, [onScalesUpdate, currentScales]);
 
   // on mount
   useEffect(() => {
@@ -98,46 +123,48 @@ function Chart(props: Props) {
       );
     }
 
-    const offscreenCanvas = canvas.transferControlToOffscreen();
-    rpcSend(
-      "initialize",
-      {
-        node: offscreenCanvas,
-        type,
-        data,
-        options,
-        devicePixelRatio,
-        width,
-        height,
-      },
-      [offscreenCanvas],
-    );
-
     initialized.current = true;
-  }, [props, type, data, options, width, height, rpcSend]);
+    const offscreenCanvas = canvas.transferControlToOffscreen();
+
+    (async function () {
+      const scales = await rpcSend(
+        "initialize",
+        {
+          node: offscreenCanvas,
+          type,
+          data,
+          options,
+          devicePixelRatio,
+          width,
+          height,
+        },
+        [offscreenCanvas],
+      );
+      maybeUpdateScales(scales);
+    })();
+  }, [type, data, options, width, height, rpcSend, maybeUpdateScales]);
 
   // update remote data
   useEffect(() => {
     (async function () {
-      await rpcSend("update", {
+      const scales = await rpcSend("update", {
         data,
         options,
         width,
         height,
       });
+      maybeUpdateScales(scales);
     })();
-  }, [data, height, options, rpcSend, width]);
+  }, [data, height, maybeUpdateScales, options, rpcSend, width]);
 
   const onWheel = useCallback(
     async (event: React.WheelEvent<HTMLCanvasElement>) => {
-      /*
-      if (!props.options.plugins?.zoom?.zoom?.enabled) {
+      if (!zoomEnabled) {
         return;
       }
-      */
 
       const boundingRect = event.currentTarget.getBoundingClientRect();
-      await rpcSend("wheel", {
+      const scales = await rpcSend("wheel", {
         event: {
           cancelable: false,
           deltaY: event.deltaY,
@@ -149,21 +176,24 @@ function Chart(props: Props) {
           },
         },
       });
+      maybeUpdateScales(scales);
     },
-    [rpcSend],
+    [zoomEnabled, rpcSend, maybeUpdateScales],
   );
 
   const onMouseDown = useCallback(
-    (event: React.MouseEvent<HTMLCanvasElement>) => {
-      rpcSend("mousedown", {
+    async (event: React.MouseEvent<HTMLCanvasElement>) => {
+      const scales = await rpcSend("mousedown", {
         event: rpcMouseEvent(event),
       });
+
+      maybeUpdateScales(scales);
     },
-    [rpcSend],
+    [maybeUpdateScales, rpcSend],
   );
 
   const onMouseUp = useCallback(
-    (event: React.MouseEvent<HTMLCanvasElement>) => {
+    async (event: React.MouseEvent<HTMLCanvasElement>) => {
       rpcSend("mouseup", {
         event: rpcMouseEvent(event),
       });
@@ -175,11 +205,12 @@ function Chart(props: Props) {
     async (event: React.MouseEvent<HTMLCanvasElement>) => {
       // fixme if not down we don't need to send to rpc?
 
-      rpcSend("mousemove", {
+      const scales = await rpcSend("mousemove", {
         event: rpcMouseEvent(event),
       });
+      maybeUpdateScales(scales);
     },
-    [rpcSend],
+    [maybeUpdateScales, rpcSend],
   );
 
   const onClick = useCallback(

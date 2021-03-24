@@ -13,7 +13,15 @@
 import { ChartOptions, ScaleOptionsByType, ChartDataset } from "chart.js";
 import { AnnotationOptions } from "chartjs-plugin-annotation";
 import { max, min, flatten, sortedUniqBy, uniqBy } from "lodash";
-import React, { memo, useEffect, useCallback, useState, useRef, ComponentProps } from "react";
+import React, {
+  memo,
+  useEffect,
+  useCallback,
+  useState,
+  useRef,
+  ComponentProps,
+  useMemo,
+} from "react";
 import DocumentEvents from "react-document-events";
 import ReactDOM from "react-dom";
 import { useDispatch } from "react-redux";
@@ -30,6 +38,7 @@ import {
 } from "@foxglove-studio/app/components/MessagePathSyntax/useCachedGetMessagePathDataItems";
 import { useMessagePipeline } from "@foxglove-studio/app/components/MessagePipeline";
 import ChartComponent from "@foxglove-studio/app/components/ReactChartjs/index";
+import { RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
 import TimeBasedChartLegend from "@foxglove-studio/app/components/TimeBasedChart/TimeBasedChartLegend";
 import Tooltip from "@foxglove-studio/app/components/Tooltip";
 import createSyncingComponent from "@foxglove-studio/app/components/createSyncingComponent";
@@ -229,9 +238,9 @@ export type Props = {
 // component. Uses chart.js internally, with a zoom/pan plugin, and with our
 // standard tooltips.
 export default memo<Props>(function TimeBasedChart(props: Props) {
-  const chartComponent = useRef<typeof ChartComponent>(ReactNull);
   const tooltip = useRef<HTMLDivElement>(ReactNull);
   const hasUnmounted = useRef<boolean>(false);
+  const canvasContainer = useRef<HTMLDivElement>(ReactNull);
 
   const [hasUserPannedOrZoomed, setHasUserPannedOrZoomed] = useState<boolean>(false);
   const [followPlaybackState, setFollowPlaybackState] = useState<FollowPlaybackState | undefined>(
@@ -273,8 +282,8 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
   }, [pauseFrame]);
 
   const { saveCurrentView, yAxes, xAxes } = props;
-  const scaleBounds = useRef<readonly ScaleBounds[] | undefined>();
   const hoverBar = useRef<HTMLDivElement>(ReactNull);
+  const [currentScales, setCurrentScales] = useState<RpcScales | undefined>();
 
   // fixme do we still need this?
   /*
@@ -499,57 +508,66 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
     [dispatch, hoverComponentId, xAxisIsPlaybackTime],
   );
 
+  // the hover bar works by getting the hover location in the chart
+  // for some x mouse position, we get the value in the chart
+  // it asumes a time based chart - so given the current chart scale bounds for x axis
+  // we convert the x mouse position into those bounds to get th time value
+
+  const xScale = useMemo(() => {
+    return currentScales?.x;
+  }, [currentScales]);
+
   const onMouseMove = useCallback(
     async (event: MouseEvent) => {
-      const currentChartComponent = chartComponent.current;
-      if (!currentChartComponent || !currentChartComponent.canvas) {
-        removeTooltip();
-        clearGlobalHoverTime();
-        return;
-      }
-      const { canvas } = currentChartComponent;
-      const canvasRect = canvas.getBoundingClientRect();
-      const xBounds =
-        scaleBounds.current && scaleBounds.current.find(({ axes }) => axes === "xAxes");
-      const yBounds =
-        scaleBounds.current && scaleBounds.current.find(({ axes }) => axes === "yAxes");
-      const xMousePosition = event.pageX - canvasRect.left;
-      const yMousePosition = event.pageY - canvasRect.top;
-      const isTargetingCanvas = event.target === canvas;
-      if (
-        !inBounds(xMousePosition, xBounds) ||
-        !inBounds(yMousePosition, yBounds) ||
-        !isTargetingCanvas
-      ) {
+      if (!xScale || !canvasContainer.current) {
         removeTooltip();
         clearGlobalHoverTime();
         return;
       }
 
-      const value = getChartValue(xBounds, xMousePosition);
-      if (value != undefined) {
-        setGlobalHoverTime(value);
-      } else {
+      const isTargetingCanvas = event.target === canvasContainer.current;
+      /*
+      if (!isTargetingCanvas) {
+        removeTooltip();
         clearGlobalHoverTime();
+        return;
+      }
+      */
+
+      const canvasContainerRect = canvasContainer.current.getBoundingClientRect();
+      const mouseX = event.pageX - canvasContainerRect.left;
+      const pixels = xScale.right - xScale.left;
+      const range = xScale.max - xScale.min;
+      const xVal = (range / pixels) * (mouseX - xScale.left) + xScale.min;
+
+      const xInBounds = xVal >= xScale.min && xVal <= xScale.max;
+      if (!xInBounds || isNaN(xVal)) {
+        removeTooltip();
+        clearGlobalHoverTime();
+        return;
       }
 
+      setGlobalHoverTime(xVal);
+
+      /*
       if (tooltips && tooltips.length) {
         const tooltipElement = await currentChartComponent.getElementAtXAxis(event);
         updateTooltip(currentChartComponent, canvas, tooltipElement);
       } else {
         removeTooltip();
       }
+      */
     },
-    [updateTooltip, removeTooltip, tooltips, clearGlobalHoverTime, setGlobalHoverTime, scaleBounds],
+    [xScale, setGlobalHoverTime, removeTooltip, clearGlobalHoverTime],
   );
 
   // Normally we set the x axis step-size and display automatically, but we need consistency when
   // scrolling with playback because the vertical lines can flicker, and x axis labels can have an
   // inconsistent number of digits.
-  const xBounds = scaleBounds.current && scaleBounds.current.find(({ axes }) => axes === "xAxes");
-  const yBounds = scaleBounds.current && scaleBounds.current.find(({ axes }) => axes === "yAxes");
+  //const xBounds = scaleBounds.current && scaleBounds.current.find(({ axes }) => axes === "xAxes");
+  //const yBounds = scaleBounds.current && scaleBounds.current.find(({ axes }) => axes === "yAxes");
 
-  const xScaleOptions = followPlaybackState && xBounds ? stepSize(xBounds) : undefined;
+  //const xScaleOptions = followPlaybackState && xBounds ? stepSize(xBounds) : undefined;
 
   const getChartjsOptions = (minX: number | undefined, maxX?: number) => {
     const { currentTime } = props;
@@ -561,7 +579,7 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
       fontSize: 10,
       fontColor: "#eee",
       maxRotation: 0,
-      stepSize: xScaleOptions,
+      //stepSize: xScaleOptions,
     };
     const defaultYTicksSettings = {
       fontFamily: mixins.monospaceFont,
@@ -614,6 +632,9 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
     const plugins: ChartOptions["plugins"] = {
       ...props.plugins,
       legend: {
+        display: false,
+      },
+      datalabels: {
         display: false,
       },
       tooltip: {
@@ -722,6 +743,7 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
       ...data,
       datasets: filterDatasets(data.datasets, linesToHide),
     },
+    onScalesUpdate: setCurrentScales,
     //onClick: onClickAddingValues,
     onChartUpdate,
   };
@@ -735,7 +757,7 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
           <HoverBar
             componentId={hoverComponentId}
             isTimestampScale={xAxisIsPlaybackTime}
-            scaleBounds={scaleBounds}
+            scales={currentScales}
           >
             <SBar xAxisIsPlaybackTime={xAxisIsPlaybackTime} ref={hoverBar} />
           </HoverBar>
@@ -761,7 +783,9 @@ export default memo<Props>(function TimeBasedChart(props: Props) {
           ) : (
           */}
 
-          <ChartComponent {...chartProps} />
+          <div ref={canvasContainer}>
+            <ChartComponent {...chartProps} />
+          </div>
 
           {hasUserPannedOrZoomed && (
             <SResetZoom>

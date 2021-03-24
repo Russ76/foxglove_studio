@@ -12,9 +12,13 @@
 //   You may not use this file except in compliance with the License.
 
 import { Chart, ChartData, ChartOptions, ChartDataset, ChartType } from "chart.js";
+import AnnotationPlugin from "chartjs-plugin-annotation";
 import type { Context as DatalabelContext } from "chartjs-plugin-datalabels";
+import DatalabelPlugin from "chartjs-plugin-datalabels";
 import { Zoom as ZoomPlugin } from "chartjs-plugin-zoom";
 import EventEmitter from "eventemitter3";
+
+import { RpcScale, RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
 
 type Unpack<A> = A extends Array<infer E> ? E : A;
 //type Meta = ReturnType<Chart["getDatasetMeta"]>;
@@ -93,7 +97,7 @@ export default class ChartJSManager {
         ...this.addFunctionsToConfig(options),
         devicePixelRatio,
       },
-      plugins: [ZoomPlugin],
+      plugins: [AnnotationPlugin, DatalabelPlugin, ZoomPlugin],
     });
 
     ZoomPlugin.start = origZoomStart;
@@ -103,32 +107,33 @@ export default class ChartJSManager {
   wheel(event: any) {
     event.target.getBoundingClientRect = () => event.target.boundingClientRect;
     this.#fakeNodeEvents.emit("wheel", event);
+    return this.getScales();
   }
 
   mousedown(event: any) {
     event.target.getBoundingClientRect = () => event.target.boundingClientRect;
     this.#fakeNodeEvents.emit("mousedown", event);
+    return this.getScales();
   }
 
   mousemove(event: any) {
     event.target.getBoundingClientRect = () => event.target.boundingClientRect;
     this.#fakeNodeEvents.emit("mousemove", event);
+    return this.getScales();
   }
 
   mouseup(event: any) {
     event.target.getBoundingClientRect = () => event.target.boundingClientRect;
     // up is registered on the _document_ by zoom plugin
     this.#fakeDocumentEvents.emit("mouseup", event);
+    return this.getScales();
   }
 
-  update({ data, options }: { data: ChartData; options: ChartOptions }): void {
+  update({ data, options }: { data: ChartData; options: ChartOptions }) {
     data;
     options;
     const instance = this.#chartInstance;
 
-    if (!instance) {
-      return;
-    }
     /*
 
     if (options) {
@@ -189,6 +194,7 @@ export default class ChartJSManager {
     */
 
     instance.update();
+    return this.getScales();
   }
 
   destroy(): void {
@@ -215,22 +221,24 @@ export default class ChartJSManager {
     return context?.dataset.data[context.dataIndex];
   }
 
-  // Since we cannot serialize functions over rpc, we add their handling here
-  private addFunctionsToConfig(config: ChartOptions): typeof config {
-    if (config.plugins) {
-      config.plugins.zoom = {
-        zoom: {
-          enabled: true,
-          speed: 0.1,
-          //drag: true,
-        },
-        pan: {
-          enabled: true,
-        },
+  // get the current chart scales in an rpc friendly format
+  // all rpc methods return the current chart scale since that is the main thing that could change automatically
+  getScales(): RpcScales {
+    const scales: RpcScales = {};
+    for (const [id, scale] of Object.entries(this.#chartInstance.scales)) {
+      scales[id] = {
+        left: scale.left,
+        right: scale.right,
+        min: scale.min,
+        max: scale.max,
       };
     }
+    return scales;
+  }
 
-    if (config && config.plugins?.datalabels) {
+  // We cannot serialize functions over rpc, we add options that require functions here
+  private addFunctionsToConfig(config: ChartOptions): typeof config {
+    if (config.plugins?.datalabels) {
       // process _click_ events to get the label we clicked on
       // this is because datalabels does not export any public methods to lookup the clicked label
       // maybe we contribute a patch upstream with the explanation for web-worker use

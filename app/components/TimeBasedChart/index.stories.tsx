@@ -41,8 +41,8 @@ const tooltipData: any = {
 const commonProps: Props = {
   isSynced: true,
   zoom: true,
-  width: 867.272705078125,
-  height: 1139.1051025390625,
+  width: 800,
+  height: 600,
   data: {
     datasets: [
       {
