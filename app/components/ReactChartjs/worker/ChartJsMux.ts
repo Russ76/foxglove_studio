@@ -34,6 +34,7 @@ import { setupWorker } from "@foxglove-studio/app/util/RpcWorkerUtils";
 
 import ChartJSManager from "./ChartJSManager";
 
+// fixme - move these into the specific chart instance in ChartJSManager
 Chart.register(
   LineElement,
   PointElement,
@@ -80,13 +81,12 @@ export default class ChartJsMux {
     rpc.receive("destroy", (args: any) => {
       const manager = this.#managers.get(args.id);
       if (manager) {
-        const result = manager.destroy();
+        manager.destroy();
         this.#managers.delete(args.id);
-        return result;
       }
     });
-    rpc.receive("getElementAtXAxis", (args: any) =>
-      this.#managers.get(args.id)?.getElementAtXAxis(args),
+    rpc.receive("getElementsAtEvent", (args: any) =>
+      this.#managers.get(args.id)?.getElementsAtEvent(args),
     );
     rpc.receive("getDatalabelAtEvent", (args: any) =>
       this.#managers.get(args.id)?.getDatalabelAtEvent(args),

@@ -2,11 +2,11 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { ChartOptions, ChartData, Scale } from "chart.js";
+import { ChartOptions, ChartData } from "chart.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import { RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
+import { RpcElement, RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
 import WebWorkerManager from "@foxglove-studio/app/util/WebWorkerManager";
 
 // Webworker Manager wants a constructor so we need to have a "class" wrapper
@@ -24,13 +24,16 @@ type Props = {
   height: number;
   width: number;
   onClick?: (arg0: React.MouseEvent<HTMLCanvasElement>, datalabel: unknown) => void;
-  //onPanZoom?: (arg0: ScaleBounds[]) => void;
 
-  // called when the chart scales have updated
+  // called when the chart scales have updated (happens for zoom/pan/reset)
   onScalesUpdate?: (scales: RpcScales) => void;
 
-  // fixme - I think the message pipeline needs this to know when rendering is complete
+  // called when the chart has finished updating with new data
   onChartUpdate?: () => void;
+
+  // called when a user hovers over an element
+  // uses the chart.options.hover configuration
+  onHover?: (elements: RpcElement[]) => void;
 };
 
 const devicePixelRatio = window.devicePixelRatio ?? 1;
@@ -54,7 +57,8 @@ function rpcMouseEvent(event: React.MouseEvent<HTMLCanvasElement>) {
 
 // Chart component renders data using workers with chartjs offscreen canvas
 function Chart(props: Props) {
-  // note that props.id is only used on first render
+  // NOTE that props.id is only used on first render
+  // fixme why do we let the user pass this in?
   const [id] = useState(props.id ?? uuidv4);
   const initialized = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(ReactNull);
@@ -70,22 +74,21 @@ function Chart(props: Props) {
 
   // helper function to send rpc to our worker - all invocations need an _id_ so we inject it here
   const rpcSend = useCallback(
-    (topic: string, payload?: any, transferrables?: unknown[]) => {
-      return rpc.send<RpcScales>(topic, { id, ...payload }, transferrables);
+    <T extends unknown>(topic: string, payload?: any, transferrables?: unknown[]) => {
+      return rpc.send<T>(topic, { id, ...payload }, transferrables);
     },
     [id, rpc],
   );
 
   useEffect(() => {
     return () => {
-      // If this component will unmount, resolve any pending update callbacks.
-      //objectValues(this._onEndChartUpdateCallbacks).forEach((callback) => callback());
-      //this._onEndChartUpdateCallbacks = {};
-
       rpcSend("destroy");
       webWorkerManager.unregisterWorkerListener(id);
     };
   }, [id, rpcSend]);
+
+  // trigger when scales update
+  const onScalesUpdate = props.onScalesUpdate;
 
   const maybeUpdateScales = useCallback((newScales: RpcScales) => {
     setScales((oldScales) => {
@@ -98,14 +101,14 @@ function Chart(props: Props) {
   }, []);
 
   // trigger when scales update
-  const onScalesUpdate = props.onScalesUpdate;
+  //const onScalesUpdate = props.onScalesUpdate;
   useEffect(() => {
     if (currentScales) {
       onScalesUpdate?.(currentScales);
     }
   }, [onScalesUpdate, currentScales]);
 
-  // on mount
+  // first time initialization
   useEffect(() => {
     // initialization happens once - even if the props for this effect change
     if (initialized.current) {
@@ -118,6 +121,8 @@ function Chart(props: Props) {
     }
 
     if (!canvas.transferControlToOffscreen) {
+      // fixme - maybe a nicer situation is displaying a warning to the user in the component rather than throwing?
+      // no we should throw - not our responsibility to handle fallback display?
       throw new Error(
         "ReactChartJS currently only works with browsers with offscreen canvas support",
       );
@@ -127,7 +132,7 @@ function Chart(props: Props) {
     const offscreenCanvas = canvas.transferControlToOffscreen();
 
     (async function () {
-      const scales = await rpcSend(
+      const scales = await rpcSend<RpcScales>(
         "initialize",
         {
           node: offscreenCanvas,
@@ -144,18 +149,21 @@ function Chart(props: Props) {
     })();
   }, [type, data, options, width, height, rpcSend, maybeUpdateScales]);
 
-  // update remote data
+  // update chart on new changes
+  const { onChartUpdate } = props;
   useEffect(() => {
     (async function () {
-      const scales = await rpcSend("update", {
+      const scales = await rpcSend<RpcScales>("update", {
         data,
         options,
         width,
         height,
       });
       maybeUpdateScales(scales);
+
+      onChartUpdate?.();
     })();
-  }, [data, height, maybeUpdateScales, options, rpcSend, width]);
+  }, [data, height, maybeUpdateScales, onChartUpdate, options, rpcSend, width]);
 
   const onWheel = useCallback(
     async (event: React.WheelEvent<HTMLCanvasElement>) => {
@@ -164,7 +172,7 @@ function Chart(props: Props) {
       }
 
       const boundingRect = event.currentTarget.getBoundingClientRect();
-      const scales = await rpcSend("wheel", {
+      const scales = await rpcSend<RpcScales>("wheel", {
         event: {
           cancelable: false,
           deltaY: event.deltaY,
@@ -183,7 +191,7 @@ function Chart(props: Props) {
 
   const onMouseDown = useCallback(
     async (event: React.MouseEvent<HTMLCanvasElement>) => {
-      const scales = await rpcSend("mousedown", {
+      const scales = await rpcSend<RpcScales>("mousedown", {
         event: rpcMouseEvent(event),
       });
 
@@ -201,16 +209,25 @@ function Chart(props: Props) {
     [rpcSend],
   );
 
+  const { onHover } = props;
   const onMouseMove = useCallback(
     async (event: React.MouseEvent<HTMLCanvasElement>) => {
-      // fixme if not down we don't need to send to rpc?
+      if (onHover) {
+        const elements = await rpcSend<RpcElement[]>("getElementsAtEvent", {
+          event: rpcMouseEvent(event),
+        });
+        onHover(elements);
+      }
 
+      // fixme if not down we don't need to send to rpc?
+      /*
       const scales = await rpcSend("mousemove", {
         event: rpcMouseEvent(event),
       });
       maybeUpdateScales(scales);
+      */
     },
-    [maybeUpdateScales, rpcSend],
+    [rpcSend, onHover],
   );
 
   const onClick = useCallback(

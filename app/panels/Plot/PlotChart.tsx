@@ -11,6 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
+import { ScaleOptionsByType } from "chart.js";
 import { AnnotationOptions } from "chartjs-plugin-annotation";
 import flatten from "lodash/flatten";
 import { memo, useMemo } from "react";
@@ -108,11 +109,6 @@ function getXForPoint(
   }
   return xAxisVal === "timestamp" ? timestamp : innerIdx;
 }
-
-const scaleOptions: ScaleOptions = {
-  fixedYAxisWidth: 48,
-  yAxisTicks: "hideFirstAndLast",
-};
 
 function getPointsAndTooltipsForMessagePathItem(
   yItem: TooltipItem,
@@ -375,9 +371,9 @@ type PlotChartProps = {
   currentTime?: number;
   defaultView: ChartDefaultView;
   onClick?: (
-    arg0: React.MouseEvent<HTMLCanvasElement>,
-    arg1: unknown,
-    arg2: {
+    ev: React.MouseEvent<HTMLCanvasElement>,
+    datalabel: unknown,
+    values: {
       [scaleId: string]: number;
     },
   ) => void;
@@ -397,19 +393,17 @@ export default memo<PlotChartProps>(function PlotChart(props: PlotChartProps) {
   } = props;
   const annotations = getAnnotations(paths);
 
-  const yAxes = useMemo(() => {
+  const yAxes = useMemo((): ScaleOptionsByType => {
     const min = isNaN(minYValue) ? undefined : minYValue;
     const max = isNaN(maxYValue) ? undefined : maxYValue;
     return {
-      id: Y_AXIS_ID,
+      min,
+      max,
       ticks: {
-        min,
-        max,
         precision: 3,
       },
-      gridLines: {
+      grid: {
         color: "rgba(255, 255, 255, 0.2)",
-        zeroLineColor: "rgba(255, 255, 255, 0.2)",
       },
     };
   }, [maxYValue, minYValue]);
@@ -431,7 +425,6 @@ export default memo<PlotChartProps>(function PlotChart(props: PlotChartProps) {
             yAxes={yAxes}
             saveCurrentView={saveCurrentView}
             xAxisIsPlaybackTime={xAxisVal === "timestamp"}
-            scaleOptions={scaleOptions}
             currentTime={currentTime}
             defaultView={defaultView}
             onClick={onClick}

@@ -11,7 +11,7 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { useMemo } from "react";
+import { CSSProperties, useMemo } from "react";
 import { useSelector } from "react-redux";
 import styled from "styled-components";
 
@@ -68,7 +68,7 @@ export default React.memo<Props>(function HoverBar({
     return ((hoverValue.value - xScale.min) * pixels) / range + xScale.left;
   }, [scales?.x, hoverValue, componentId, isTimestampScale]);
 
-  const { visibility, transform } = useMemo(() => {
+  const { visibility, transform } = useMemo((): CSSProperties => {
     if (positionX == undefined || isNaN(positionX)) {
       return { visibility: "hidden", transform: undefined };
     }

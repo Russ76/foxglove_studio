@@ -250,7 +250,7 @@ function Plot(props: Props) {
   }
 
   const onClick = useCallback(
-    (_, __, { X_AXIS_ID: seekSeconds }) => {
+    (_event, _datalabel, { x: seekSeconds }) => {
       if (!startTime || seekSeconds == undefined || !seek || xAxisVal !== "timestamp") {
         return;
       }

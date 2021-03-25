@@ -25,7 +25,6 @@ import MessagePathInput from "@foxglove-studio/app/components/MessagePathSyntax/
 import useMessagesByPath from "@foxglove-studio/app/components/MessagePathSyntax/useMessagesByPath";
 import Panel from "@foxglove-studio/app/components/Panel";
 import PanelToolbar from "@foxglove-studio/app/components/PanelToolbar";
-import { ScaleOptions } from "@foxglove-studio/app/components/ReactChartjs";
 import TimeBasedChart, {
   getTooltipItemForMessageHistoryItem,
   TimeBasedChartTooltipData,
@@ -137,10 +136,8 @@ const SInputDelete = styled.div`
 
 const yAxes: ScaleOptionsByType = {
   ticks: {
-    //fontFamily: mixins.monospaceFont,
-    //fontSize: 10,
-    //fontColor: "#eee",
-    maxRotation: 0,
+    // Hide all y-axis ticks since each bar on the y-axis is just a separate path.
+    display: false,
   },
   type: "category",
   offset: true,
@@ -158,11 +155,6 @@ const plugins: ChartOptions["plugins"] = {
       weight: fontWeight,
     },
   },
-};
-
-const scaleOptions: ScaleOptions = {
-  // Hide all y-axis ticks since each bar on the y-axis is just a separate path.
-  yAxisTicks: "hide",
 };
 
 export type StateTransitionPath = { value: string; timestampMethod: TimestampMethod };
@@ -348,7 +340,6 @@ const StateTransitions = React.memo(function StateTransitions(props: Props) {
                 xAxisIsPlaybackTime
                 yAxes={yAxes}
                 plugins={plugins}
-                scaleOptions={scaleOptions}
                 tooltips={tooltips}
               />
 

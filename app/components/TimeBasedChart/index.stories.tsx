@@ -118,9 +118,9 @@ function CleansUpTooltipExample() {
 function ZoomExample() {
   const [, forceUpdate] = useState(0);
   const newProps = cloneDeep(commonProps);
-  const newDataPoint = cloneDeep(newProps.data.datasets[0].data[0]);
+  const newDataPoint = cloneDeep(newProps.data.datasets[0]!.data[0]!);
   newDataPoint.x = 20;
-  newProps.data.datasets[0].data[1] = newDataPoint;
+  newProps.data.datasets[0]!.data[1] = newDataPoint;
 
   const refFn = useCallback(() => {
     setTimeout(() => {

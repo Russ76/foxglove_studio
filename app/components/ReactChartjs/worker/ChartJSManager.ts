@@ -11,26 +11,18 @@
 //   found at http://www.apache.org/licenses/LICENSE-2.0
 //   You may not use this file except in compliance with the License.
 
-import { Chart, ChartData, ChartOptions, ChartDataset, ChartType } from "chart.js";
+import { Chart, ChartData, ChartOptions, ChartType } from "chart.js";
 import AnnotationPlugin from "chartjs-plugin-annotation";
 import type { Context as DatalabelContext } from "chartjs-plugin-datalabels";
 import DatalabelPlugin from "chartjs-plugin-datalabels";
 import { Zoom as ZoomPlugin } from "chartjs-plugin-zoom";
 import EventEmitter from "eventemitter3";
+import merge from "lodash/merge";
 
-import { RpcScale, RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
-
-type Unpack<A> = A extends Array<infer E> ? E : A;
-//type Meta = ReturnType<Chart["getDatasetMeta"]>;
-//type MetaData = Unpack<Meta["data"]>;
+import { RpcElement, RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
 
 // allows us to override the chart.ctx instance field which zoom plugin uses for adding event listeners
 type MutableContext = Omit<Chart, "ctx"> & { ctx: any };
-
-type EventElement = {
-  data: Unpack<ChartDataset["data"]>;
-  //view: MetaData["_view"];
-};
 
 function addEventListener(emitter: EventEmitter) {
   return (eventName: string, fn?: () => void) => {
@@ -131,15 +123,12 @@ export default class ChartJSManager {
 
   update({ data, options }: { data: ChartData; options: ChartOptions }) {
     data;
-    options;
     const instance = this.#chartInstance;
 
-    /*
+    //const fullOptions = this.addFunctionsToConfig(options);
+    instance.options.scales = merge(instance.options.scales, options.scales);
 
-    if (options) {
-      options = this._addFunctionsToConfig(options, scaleOptions);
-      chartInstance.options = Chart.helpers.configMerge(chartInstance.options, options);
-    }
+    /*
 
     // Pipe datasets to chart instance datasets enabling
     // seamless transitions
@@ -201,13 +190,50 @@ export default class ChartJSManager {
     this.#chartInstance?.destroy();
   }
 
-  // Get the closest element at the same x-axis value as the cursor.
-  // This is a somewhat complex function because we attempt to copy the same behavior that the built-in tooltips have
-  // for Chart.js without a direct API for it.
-  getElementAtXAxis({ event }: { event: Event }): EventElement | undefined {
-    event;
-    // fixme I think chartjs has this exposed now
-    return undefined;
+  // fixme - we need to add an RpcEvent type for the Event(s) we send over rpc
+
+  getElementsAtEvent({ event }: { event: any }): RpcElement[] {
+    const ev = {
+      native: true,
+      x: event.clientX,
+      y: event.clientY,
+    };
+
+    // fixme - consider?
+    // I could make a platform, then inject the events on the platform
+    // then everything inside chartjs will just work as expected
+
+    // fixme - the user should pass in the mode and intersect options
+    // hover is what chart.js does to support onHover, but this is more generic
+
+    // ev is cast to any because the typings for getElementsAtEventForMode are wrong
+    // ev is specified as a dom Event - but the implementation does not require it for the basic platform
+    const elements = this.#chartInstance.getElementsAtEventForMode(
+      ev as any,
+      this.#chartInstance.options.hover?.mode ?? "point",
+      this.#chartInstance.options.hover ?? {},
+      false,
+    );
+
+    const out = new Array<RpcElement>();
+
+    for (const element of elements) {
+      const data = this.#chartInstance.data.datasets[element.datasetIndex]?.data[element.index];
+      if (data == undefined || typeof data === "number") {
+        continue;
+      }
+
+      // turn into an object we can send over the rpc
+      out.push({
+        view: {
+          x: element.element.x,
+          y: element.element.y,
+        },
+        data,
+      });
+    }
+
+    return out;
   }
 
   getDatalabelAtEvent({ event }: { event: Event }): unknown {

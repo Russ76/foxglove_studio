@@ -18,6 +18,7 @@ import {
   MessagePipelineContext,
   useMessagePipeline,
 } from "@foxglove-studio/app/components/MessagePipeline";
+import { RpcScales } from "@foxglove-studio/app/components/ReactChartjs/types";
 import HoverBar from "@foxglove-studio/app/components/TimeBasedChart/HoverBar";
 import { toSec } from "@foxglove-studio/app/util/time";
 
@@ -58,33 +59,29 @@ type Props = {
 
 export default React.memo<Props>(function PlaybackBarHoverTicks({ componentId }: Props) {
   const { startTime, endTime } = useMessagePipeline(getStartAndEndTime);
-  const [width, setWidth] = useState<number | undefined>();
+  const [, setWidth] = useState<number | undefined>();
 
-  const scaleBounds = useMemo<{ current: readonly ScaleBounds[] | undefined }>(() => {
-    if (width == undefined || startTime == undefined || endTime == undefined) {
-      return { current: undefined };
+  // fixme - hover bar only needs the x-scale information
+  const scaleBounds = useMemo<RpcScales | undefined>(() => {
+    if (startTime == undefined || endTime == undefined) {
+      return;
     }
+
     return {
-      // HoverBar takes a ref to avoid rerendering (and avoid needing to rerender) when the bounds
-      // change in charts that scroll at playback speed.
-      current: [
-        {
-          id: componentId,
-          min: 0,
-          max: toSec(endTime) - toSec(startTime),
-          axes: "xAxes",
-          minAlongAxis: 0,
-          maxAlongAxis: width,
-        },
-      ],
+      x: {
+        min: 0,
+        max: toSec(endTime) - toSec(startTime),
+        left: 0,
+        right: 0,
+      },
     };
-  }, [width, startTime, endTime, componentId]);
+  }, [startTime, endTime]);
 
   return (
     <>
       <Dimensions onChange={({ width: newWidth }) => setWidth(newWidth)} />
       {scaleBounds && (
-        <HoverBar componentId={componentId} scaleBounds={scaleBounds} isTimestampScale>
+        <HoverBar componentId={componentId} scales={scaleBounds} isTimestampScale>
           <TopTick />
           <BottomTick />
         </HoverBar>

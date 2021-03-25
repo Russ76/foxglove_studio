@@ -28,10 +28,10 @@ describe("filterDatasets", () => {
     const datasets = [
       {
         data: [
-          { x: 0, y: "1" },
-          { x: 0, y: "1" },
-          { x: 0, y: "2" },
-          { x: 0, y: "3" },
+          { x: 0, y: 1 },
+          { x: 0, y: 1 },
+          { x: 0, y: 2 },
+          { x: 0, y: 3 },
         ],
         label: "1",
       },
