@@ -1110,6 +1110,7 @@ export class IterablePlayer implements Player {
     await this.#blockLoader?.stopLoading();
     await this.#blockLoadingProcess;
     await this.#bufferImpl.stopProducer();
+    await this.#bufferImpl.terminate();
     await this.#bufferedSource.terminate?.();
     await this.#playbackIterator?.return?.();
     this.#playbackIterator = undefined;
