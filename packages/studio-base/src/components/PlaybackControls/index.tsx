@@ -286,7 +286,7 @@ export default function PlaybackControls(props: {
               onClick={toggleRepeat}
               icon={repeatEnabled ? <ArrowRepeatAll20Regular /> : <ArrowRepeatAllOff20Regular />}
             />
-            <PlaybackSpeedControls />
+            <PlaybackSpeedControls disabled={disableControls} />
           </Stack>
         </Stack>
         {createEventDialogOpen && eventsSupported && (

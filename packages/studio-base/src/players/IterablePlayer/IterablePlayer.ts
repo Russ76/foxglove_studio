@@ -25,6 +25,7 @@ import NoopMetricsCollector from "@foxglove/studio-base/players/NoopMetricsColle
 import PlayerProblemManager from "@foxglove/studio-base/players/PlayerProblemManager";
 import {
   AdvertiseOptions,
+  PlaybackSpeed,
   Player,
   PlayerCapabilities,
   PlayerMetricsCollectorInterface,
@@ -125,7 +126,7 @@ export class IterablePlayer implements Player {
   #repeatEnabled: boolean = false;
   #isPlaying: boolean = false;
   #listener?: (playerState: PlayerState) => Promise<void>;
-  #speed: number = 1.0;
+  #speed: PlaybackSpeed = 1.0;
   #start?: Time;
   #end?: Time;
   #enablePreload = true;
@@ -280,7 +281,7 @@ export class IterablePlayer implements Player {
     }
   }
 
-  public setPlaybackSpeed(speed: number): void {
+  public setPlaybackSpeed(speed: PlaybackSpeed): void {
     this.#lastRangeMillis = undefined;
     this.#speed = speed;
 

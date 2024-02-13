@@ -37,6 +37,7 @@ import {
   PlayerMetricsCollectorInterface,
   TopicStats,
   TopicWithSchemaName,
+  PlaybackSpeed,
 } from "@foxglove/studio-base/players/types";
 import { RosDatatypes } from "@foxglove/studio-base/types/RosDatatypes";
 import { bagConnectionsToDatatypes } from "@foxglove/studio-base/util/bagConnectionsHelper";
@@ -638,7 +639,7 @@ export default class RosbridgePlayer implements Player {
   public seekPlayback(_time: Time): void {
     // no-op
   }
-  public setPlaybackSpeed(_speedFraction: number): void {
+  public setPlaybackSpeed(_speedFraction: PlaybackSpeed): void {
     // no-op
   }
   public setGlobalVariables(): void {
