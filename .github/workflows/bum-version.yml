@@ -26,7 +26,11 @@ jobs:
       - run: corepack enable
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --mode skip-build
+        env:
+          # yarn runs in immutable mode "by default" in CI -- turning this off requires an
+          # undocumented env var
+          YARN_ENABLE_IMMUTABLE_INSTALLS: false
 
       - name: Bump version and create tag
         run: yarn version --patch
