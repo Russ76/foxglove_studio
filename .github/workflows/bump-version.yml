@@ -1,4 +1,4 @@
-name: Auto Tag and Bump Version
+name: Auto Bump Version
 
 on:
   push:
@@ -51,8 +51,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push changes and tags
+      - name: Push changes
         run: |
-          git push origin main --follow-tags
+          git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
