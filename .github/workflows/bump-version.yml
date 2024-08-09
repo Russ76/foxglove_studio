@@ -15,12 +15,6 @@ jobs:
         with:
             lfs: true
 
-      - name: Install Git LFS
-        run: |
-          sudo apt-get update
-          sudo apt-get install git-lfs
-          git lfs install
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
