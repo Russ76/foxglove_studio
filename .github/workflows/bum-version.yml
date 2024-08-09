@@ -12,17 +12,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+            lfs: true
 
       - name: Install Git LFS
         run: |
           sudo apt-get update
           sudo apt-get install git-lfs
           git lfs install
-
-      - name: Set up Git
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,6 +34,11 @@ jobs:
           # yarn runs in immutable mode "by default" in CI -- turning this off requires an
           # undocumented env var
           YARN_ENABLE_IMMUTABLE_INSTALLS: false
+
+      - name: Set up Git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
 
       - name: Bump version and create tag
         run: yarn version --patch
