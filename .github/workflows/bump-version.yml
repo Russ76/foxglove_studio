@@ -6,7 +6,7 @@ on:
       - main  # Trigger on push to main branch
 
 jobs:
-  bump_and_tag:
+  bump:
     runs-on: ubuntu-latest
 
     steps:
