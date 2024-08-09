@@ -40,13 +40,19 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
 
-      - name: Bump version and create tag
-        run: yarn version patch
+          - name: Bump version
+          run: yarn version patch
+
+      - name: Commit version bump
+        run: |
+          git add package.json yarn.lock
+          git commit -m "chore: bump version to $(jq -r .version < package.json)"
+          git tag -a "v$(jq -r .version < package.json)" -m "Version $(jq -r .version < package.json)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push changes and tags
         run: |
-          git push --follow-tags
+          git push origin main --follow-tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
